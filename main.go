@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/rs/cors"
 )
 
 var (
@@ -49,7 +50,8 @@ func main() {
 	r := mux.NewRouter()
 	// とりあえず科目名と授業概要で検索できるように
 	r.HandleFunc("/course", courseSimpleSearchHandler).Queries("course_name", "{course_name}", "course_overview", "{course_overview}", "filter_type", "{filter_type}", "limit", "{limit}").Methods("GET")
-	http.ListenAndServe(":8080", r)
+	c := cors.Default().Handler(r)
+	http.ListenAndServe(":8080", c)
 }
 
 func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
