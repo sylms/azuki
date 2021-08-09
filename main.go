@@ -49,7 +49,14 @@ func main() {
 
 	r := mux.NewRouter()
 	// とりあえず科目名と授業概要で検索できるように
-	r.HandleFunc("/course", courseSimpleSearchHandler).Queries("course_name", "{course_name}", "course_overview", "{course_overview}", "filter_type", "{filter_type}", "limit", "{limit}").Methods("GET")
+	r.HandleFunc("/course", courseSimpleSearchHandler).Queries(
+		"course_name", "{course_name}",
+		"course_name_filter_type", "{course_name_filter_type}",
+		"course_overview", "{course_overview}",
+		"course_overview_filter_type", "{course_overview_filter_type}",
+		"filter_type", "{filter_type}",
+		"limit", "{limit}",
+	).Methods("GET")
 	c := cors.Default().Handler(r)
 	http.ListenAndServe(":8080", c)
 }
@@ -57,7 +64,9 @@ func main() {
 func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	courseName := vars["course_name"]
+	courseNameFilterType := vars["course_name_filter_type"]
 	courseOverview := vars["course_overview"]
+	courseOverviewFilterType := vars["course_overview_filter_type"]
 	filterType := vars["filter_type"]
 	limit := vars["limit"]
 
@@ -79,10 +88,12 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	courses, err := searchCourse(searchCourseOptions{
-		courseName:     courseName,
-		courseOverview: courseOverview,
-		filterType:     filterType,
-		limit:          limitInt,
+		courseName:               courseName,
+		courseNameFilterType:     courseNameFilterType,
+		courseOverview:           courseOverview,
+		courseOverviewFilterType: courseOverviewFilterType,
+		filterType:               filterType,
+		limit:                    limitInt,
 	})
 
 	if err != nil {
