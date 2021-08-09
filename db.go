@@ -23,16 +23,16 @@ type searchCourseOptions struct {
 	limit                    int
 }
 
-func searchCourse(options searchCourseOptions) ([]CoursesDB, error) {
+func buildSearchCourseQuery(options searchCourseOptions) (string, []interface{}, error) {
 	allowedFilterType := []string{filterTypeAnd, filterTypeOr}
 	if !util.Contains(allowedFilterType, options.filterType) {
-		return []CoursesDB{}, fmt.Errorf("filterType error: %s, %+v", options.filterType, allowedFilterType)
+		return "", nil, fmt.Errorf("filterType error: %s, %+v", options.filterType, allowedFilterType)
 	}
 	if !util.Contains(allowedFilterType, options.courseNameFilterType) {
-		return []CoursesDB{}, fmt.Errorf("courseNameFilterType error: %s, %+v", options.filterType, allowedFilterType)
+		return "", nil, fmt.Errorf("courseNameFilterType error: %s, %+v", options.filterType, allowedFilterType)
 	}
 	if !util.Contains(allowedFilterType, options.courseOverviewFilterType) {
-		return []CoursesDB{}, fmt.Errorf("courseOverviewFilterType error: %s, %+v", options.filterType, allowedFilterType)
+		return "", nil, fmt.Errorf("courseOverviewFilterType error: %s, %+v", options.filterType, allowedFilterType)
 	}
 
 	// PostgreSQL へ渡す $1, $2 プレースホルダーのインクリメント
@@ -74,9 +74,13 @@ func searchCourse(options searchCourseOptions) ([]CoursesDB, error) {
 	queryLimit := fmt.Sprintf(`limit $%d`, placeholderCount)
 	selectArgs = append(selectArgs, strconv.Itoa(options.limit))
 
-	var result []CoursesDB
 	const queryHead = `select * from courses where `
-	err := db.Select(&result, queryHead+queryWhere+queryLimit, selectArgs...)
+	return queryHead + queryWhere + queryLimit, selectArgs, nil
+}
+
+func searchCourse(query string, args []interface{}) ([]CoursesDB, error) {
+	var result []CoursesDB
+	err := db.Select(&result, query, args...)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

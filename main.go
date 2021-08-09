@@ -87,7 +87,7 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	courses, err := searchCourse(searchCourseOptions{
+	queryStr, queryArgs, err := buildSearchCourseQuery(searchCourseOptions{
 		courseName:               courseName,
 		courseNameFilterType:     courseNameFilterType,
 		courseOverview:           courseOverview,
@@ -95,6 +95,18 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 		filterType:               filterType,
 		limit:                    limitInt,
 	})
+	if err != nil {
+		log.Printf("%+v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	courses, err := searchCourse(queryStr, queryArgs)
+	if err != nil {
+		log.Printf("%+v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	if err != nil {
 		log.Fatalf("%+v", err)
