@@ -78,7 +78,13 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	courses, err := getSyllabusByNameAndOverview(courseName, filterType, courseOverview, limitInt)
+	courses, err := searchCourse(searchCourseOptions{
+		courseName:     courseName,
+		courseOverview: courseOverview,
+		filterType:     filterType,
+		limit:          limitInt,
+	})
+
 	if err != nil {
 		log.Fatalf("%+v", err)
 		w.WriteHeader(http.StatusBadRequest)
