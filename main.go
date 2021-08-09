@@ -112,7 +112,7 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		log.Fatalf("%+v", err)
+		log.Printf("%+v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -161,7 +161,7 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 
 	j, err := json.Marshal(coursesJSON)
 	if err != nil {
-		log.Fatalf("%+v", err)
+		log.Printf("%+v", err)
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
