@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sylms/azuki/util"
@@ -40,10 +39,9 @@ func buildSearchCourseQuery(options searchCourseOptions) (string, []interface{},
 
 	selectArgs := []interface{}{}
 
-	// TODO: 半角だけでなく全角にも対応
 	// スペース区切りとみなして単語を分割
-	courseNames := strings.Split(options.courseName, " ")
-	courseOverviews := strings.Split(options.courseOverview, " ")
+	courseNames := util.SplitSpace(options.courseName)
+	courseOverviews := util.SplitSpace(options.courseOverview)
 
 	queryCourseName := ""
 	for count, courseName := range courseNames {
@@ -70,7 +68,19 @@ func buildSearchCourseQuery(options searchCourseOptions) (string, []interface{},
 	}
 
 	// とりあえず各カラムの検索結果は AND でつなげるように
-	queryWhere := queryCourseName + "and " + queryCourseOverview
+	// 若干無理矢理な気もするのできれいにしたい
+	queryWhere := ""
+	if queryCourseName != "" {
+		queryWhere += queryCourseName
+	}
+	if queryCourseOverview != "" {
+		if queryWhere == "" {
+			queryWhere = queryCourseOverview
+		} else {
+			queryWhere += "and " + queryCourseOverview
+		}
+	}
+
 	queryLimit := fmt.Sprintf(`limit $%d`, placeholderCount)
 	selectArgs = append(selectArgs, strconv.Itoa(options.limit))
 

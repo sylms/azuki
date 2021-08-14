@@ -48,9 +48,8 @@ func Test_buildSearchCourseQuery(t *testing.T) {
 					limit:                    100,
 				},
 			},
-			want: `select * from courses where course_name like $1 and course_overview like $2 limit $3`,
+			want: `select * from courses where course_overview like $1 limit $2`,
 			want1: []interface{}{
-				`%%`,
 				`%科学%`,
 				"100",
 			},
@@ -68,10 +67,9 @@ func Test_buildSearchCourseQuery(t *testing.T) {
 					limit:                    100,
 				},
 			},
-			want: `select * from courses where course_name like $1 and course_overview like $2 limit $3`,
+			want: `select * from courses where course_name like $1 limit $2`,
 			want1: []interface{}{
 				`%情報%`,
-				`%%`,
 				"100",
 			},
 			wantErr: false,
