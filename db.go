@@ -22,6 +22,7 @@ type searchCourseOptions struct {
 	limit                    int
 }
 
+// searchCourseOptions を元に DB へ投げるクエリ文字列とそれら引数を作成する
 func buildSearchCourseQuery(options searchCourseOptions) (string, []interface{}, error) {
 	allowedFilterType := []string{filterTypeAnd, filterTypeOr}
 	if !util.Contains(allowedFilterType, options.filterType) {
@@ -37,12 +38,14 @@ func buildSearchCourseQuery(options searchCourseOptions) (string, []interface{},
 	// PostgreSQL へ渡す $1, $2 プレースホルダーのインクリメント
 	placeholderCount := 1
 
+	// PostgreSQL へ渡す select 文のプレースホルダーに割り当てる変数を格納
 	selectArgs := []interface{}{}
 
 	// スペース区切りとみなして単語を分割
 	courseNames := util.SplitSpace(options.courseName)
 	courseOverviews := util.SplitSpace(options.courseOverview)
 
+	// where 部分を構築
 	queryCourseName := ""
 	for count, courseName := range courseNames {
 		if count == 0 {
@@ -81,6 +84,7 @@ func buildSearchCourseQuery(options searchCourseOptions) (string, []interface{},
 		}
 	}
 
+	// limit 部分を構築
 	queryLimit := fmt.Sprintf(`limit $%d`, placeholderCount)
 	selectArgs = append(selectArgs, strconv.Itoa(options.limit))
 

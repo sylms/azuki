@@ -49,6 +49,7 @@ func main() {
 
 	r := mux.NewRouter()
 	// とりあえず科目名と授業概要で検索できるように
+	// TODO: course_name や course_overview を指定しない検索方法に対応
 	r.HandleFunc("/course", courseSimpleSearchHandler).Queries(
 		"course_name", "{course_name}",
 		"course_name_filter_type", "{course_name_filter_type}",
@@ -87,6 +88,7 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// SQL クエリ文字列を構築
 	queryStr, queryArgs, err := buildSearchCourseQuery(searchCourseOptions{
 		courseName:               courseName,
 		courseNameFilterType:     courseNameFilterType,
@@ -101,6 +103,7 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// DB へクエリを投げ結果を取得
 	courses, err := searchCourse(queryStr, queryArgs)
 	if err != nil {
 		log.Printf("%+v", err)
