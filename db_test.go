@@ -96,6 +96,54 @@ func Test_buildSearchCourseQuery(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "courseNameFilterType: invalid",
+			args: args{
+				options: searchCourseOptions{
+					courseName:               "情報",
+					courseNameFilterType:     "andandand",
+					courseOverview:           "科学",
+					courseOverviewFilterType: "and",
+					filterType:               "and",
+					limit:                    100,
+				},
+			},
+			want:    ``,
+			want1:   nil,
+			wantErr: true,
+		},
+		{
+			name: "courseOverviewFilterType: invalid",
+			args: args{
+				options: searchCourseOptions{
+					courseName:               "情報",
+					courseNameFilterType:     "and",
+					courseOverview:           "科学",
+					courseOverviewFilterType: "andandand",
+					filterType:               "and",
+					limit:                    100,
+				},
+			},
+			want:    ``,
+			want1:   nil,
+			wantErr: true,
+		},
+		{
+			name: "filterType: invalid",
+			args: args{
+				options: searchCourseOptions{
+					courseName:               "情報",
+					courseNameFilterType:     "and",
+					courseOverview:           "科学",
+					courseOverviewFilterType: "and",
+					filterType:               "andand",
+					limit:                    100,
+				},
+			},
+			want:    ``,
+			want1:   nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
