@@ -49,7 +49,15 @@ func main() {
 
 	r := mux.NewRouter()
 	// とりあえず科目名と授業概要で検索できるように
-	r.HandleFunc("/course", courseSimpleSearchHandler).Queries("course_name", "{course_name}", "course_overview", "{course_overview}", "filter_type", "{filter_type}", "limit", "{limit}").Methods("GET")
+	// TODO: course_name や course_overview を指定しない検索方法に対応
+	r.HandleFunc("/course", courseSimpleSearchHandler).Queries(
+		"course_name", "{course_name}",
+		"course_name_filter_type", "{course_name_filter_type}",
+		"course_overview", "{course_overview}",
+		"course_overview_filter_type", "{course_overview_filter_type}",
+		"filter_type", "{filter_type}",
+		"limit", "{limit}",
+	).Methods("GET")
 	c := cors.Default().Handler(r)
 	http.ListenAndServe(":8080", c)
 }
@@ -57,7 +65,9 @@ func main() {
 func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	courseName := vars["course_name"]
+	courseNameFilterType := vars["course_name_filter_type"]
 	courseOverview := vars["course_overview"]
+	courseOverviewFilterType := vars["course_overview_filter_type"]
 	filterType := vars["filter_type"]
 	limit := vars["limit"]
 
@@ -78,7 +88,29 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	courses, err := getSyllabusByNameAndOverview(courseName, filterType, courseOverview, limitInt)
+	// SQL クエリ文字列を構築
+	queryStr, queryArgs, err := buildSearchCourseQuery(searchCourseOptions{
+		courseName:               courseName,
+		courseNameFilterType:     courseNameFilterType,
+		courseOverview:           courseOverview,
+		courseOverviewFilterType: courseOverviewFilterType,
+		filterType:               filterType,
+		limit:                    limitInt,
+	})
+	if err != nil {
+		log.Printf("%+v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// DB へクエリを投げ結果を取得
+	courses, err := searchCourse(queryStr, queryArgs)
+	if err != nil {
+		log.Printf("%+v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	if err != nil {
 		log.Fatalf("%+v", err)
 		w.WriteHeader(http.StatusBadRequest)
