@@ -36,6 +36,66 @@ func Test_buildSearchCourseQuery(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "empty: courseName",
+			args: args{
+				options: searchCourseOptions{
+					courseName:               "",
+					courseNameFilterType:     "and",
+					courseOverview:           "科学",
+					courseOverviewFilterType: "and",
+					filterType:               "and",
+					limit:                    100,
+				},
+			},
+			want: `select * from courses where course_name like $1 and course_overview like $2 limit $3`,
+			want1: []interface{}{
+				`%%`,
+				`%科学%`,
+				"100",
+			},
+			wantErr: false,
+		},
+		{
+			name: "empty: course_overview",
+			args: args{
+				options: searchCourseOptions{
+					courseName:               "情報",
+					courseNameFilterType:     "and",
+					courseOverview:           "",
+					courseOverviewFilterType: "and",
+					filterType:               "and",
+					limit:                    100,
+				},
+			},
+			want: `select * from courses where course_name like $1 and course_overview like $2 limit $3`,
+			want1: []interface{}{
+				`%情報%`,
+				`%%`,
+				"100",
+			},
+			wantErr: false,
+		},
+		{
+			name: "limit ok?",
+			args: args{
+				options: searchCourseOptions{
+					courseName:               "情報",
+					courseNameFilterType:     "and",
+					courseOverview:           "科学",
+					courseOverviewFilterType: "and",
+					filterType:               "and",
+					limit:                    1234,
+				},
+			},
+			want: `select * from courses where course_name like $1 and course_overview like $2 limit $3`,
+			want1: []interface{}{
+				`%情報%`,
+				`%科学%`,
+				"1234",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
