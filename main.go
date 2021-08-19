@@ -24,6 +24,7 @@ const (
 	envSylmsPostgresPasswordKey = "SYLMS_POSTGRES_PASSWORD"
 	envSylmsPostgresHostKey     = "SYLMS_POSTGRES_HOST"
 	envSylmsPostgresPortKey     = "SYLMS_POSTGRES_PORT"
+	envSylmsPort                = "SYLMS_PORT"
 )
 
 const (
@@ -31,7 +32,7 @@ const (
 )
 
 func main() {
-	envKeys := []string{envSylmsPostgresDBKey, envSylmsPostgresUserKey, envSylmsPostgresPasswordKey, envSylmsPostgresHostKey, envSylmsPostgresPortKey}
+	envKeys := []string{envSylmsPostgresDBKey, envSylmsPostgresUserKey, envSylmsPostgresPasswordKey, envSylmsPostgresHostKey, envSylmsPostgresPortKey, envSylmsPort}
 	for _, key := range envKeys {
 		val, ok := os.LookupEnv(key)
 		if !ok || val == "" {
@@ -44,6 +45,7 @@ func main() {
 	postgresPassword := os.Getenv(envSylmsPostgresPasswordKey)
 	postgresHost := os.Getenv(envSylmsPostgresHostKey)
 	postgresPort := os.Getenv(envSylmsPostgresPortKey)
+	portStr := os.Getenv(envSylmsPort)
 
 	var err error
 	db, err = sqlx.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", postgresHost, postgresPort, postgresUser, postgresPassword, postgresDb))
@@ -56,7 +58,11 @@ func main() {
 	// TODO: course_name や course_overview を指定しない検索方法に対応
 	r.HandleFunc("/course", courseSimpleSearchHandler).Methods("GET")
 	c := cors.Default().Handler(r)
-	http.ListenAndServe(":8080", c)
+	log.Printf("Listen Port: %s", portStr)
+	err = http.ListenAndServe(fmt.Sprintf(":%s", portStr), c)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
