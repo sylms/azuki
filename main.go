@@ -26,6 +26,10 @@ const (
 	envSylmsPostgresPortKey     = "SYLMS_POSTGRES_PORT"
 )
 
+const (
+	searchQueryDefaultLimit = 50
+)
+
 func main() {
 	envKeys := []string{envSylmsPostgresDBKey, envSylmsPostgresUserKey, envSylmsPostgresPasswordKey, envSylmsPostgresHostKey, envSylmsPostgresPortKey}
 	for _, key := range envKeys {
@@ -50,42 +54,41 @@ func main() {
 	r := mux.NewRouter()
 	// とりあえず科目名と授業概要で検索できるように
 	// TODO: course_name や course_overview を指定しない検索方法に対応
-	r.HandleFunc("/course", courseSimpleSearchHandler).Queries(
-		"course_name", "{course_name}",
-		"course_name_filter_type", "{course_name_filter_type}",
-		"course_overview", "{course_overview}",
-		"course_overview_filter_type", "{course_overview_filter_type}",
-		"filter_type", "{filter_type}",
-		"limit", "{limit}",
-	).Methods("GET")
+	r.HandleFunc("/course", courseSimpleSearchHandler).Methods("GET")
 	c := cors.Default().Handler(r)
 	http.ListenAndServe(":8080", c)
 }
 
 func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	courseName := vars["course_name"]
-	courseNameFilterType := vars["course_name_filter_type"]
-	courseOverview := vars["course_overview"]
-	courseOverviewFilterType := vars["course_overview_filter_type"]
-	filterType := vars["filter_type"]
-	limit := vars["limit"]
+	q := r.URL.Query()
+	courseName := q.Get("course_name")
+	courseNameFilterType := q.Get("course_name_filter_type")
+	courseOverview := q.Get("course_overview")
+	courseOverviewFilterType := q.Get("course_overview_filter_type")
+	filterType := q.Get("filter_type")
+	limit := q.Get("limit")
 
 	// if !(filterType == "and" || filterType == "or") {
 	// 	w.WriteHeader(http.StatusBadRequest)
 	// 	return
 	// }
 
-	// TODO: デフォルト値を設定する
-	if limit == "" {
+	// どのカラムも検索対象としていなければ検索そのものが実行できないので、不正なリクエストである
+	if !(courseName == "" && courseOverview == "") {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	limitInt, err := strconv.Atoi(limit)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	var limitInt int
+	if limit == "" {
+		limitInt = searchQueryDefaultLimit
+	} else {
+		var err error
+		limitInt, err = strconv.Atoi(limit)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
 
 	// SQL クエリ文字列を構築
