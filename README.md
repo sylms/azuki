@@ -1,5 +1,5 @@
 # azuki
-sylms backend battle @sobadon
+[sylms/daifuku](https://github.com/sylms/daifuku) 向けの HTTP API サーバー
 
 ```
 export SYLMS_POSTGRES_DB=sylms
