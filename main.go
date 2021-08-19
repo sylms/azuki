@@ -80,7 +80,7 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 	// }
 
 	// どのカラムも検索対象としていなければ検索そのものが実行できないので、不正なリクエストである
-	if !(courseName == "" && courseOverview == "") {
+	if courseName == "" && courseOverview == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
