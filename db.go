@@ -86,7 +86,7 @@ func buildSearchCourseQuery(options searchCourseOptions) (string, []interface{},
 	}
 
 	// limit 部分を構築
-	queryLimit := fmt.Sprintf(`limit $%d`, placeholderCount)
+	queryLimit := fmt.Sprintf(`limit $%d `, placeholderCount)
 	placeholderCount++
 	selectArgs = append(selectArgs, strconv.Itoa(options.limit))
 
