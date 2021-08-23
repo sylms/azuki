@@ -20,6 +20,7 @@ type searchCourseOptions struct {
 	courseOverviewFilterType string
 	filterType               string
 	limit                    int
+	offset                   int
 }
 
 // searchCourseOptions を元に DB へ投げるクエリ文字列とそれら引数を作成する
@@ -85,11 +86,16 @@ func buildSearchCourseQuery(options searchCourseOptions) (string, []interface{},
 	}
 
 	// limit 部分を構築
-	queryLimit := fmt.Sprintf(`limit $%d`, placeholderCount)
+	queryLimit := fmt.Sprintf(`limit $%d `, placeholderCount)
+	placeholderCount++
 	selectArgs = append(selectArgs, strconv.Itoa(options.limit))
 
+	// offset 部分を構築
+	queryOffset := fmt.Sprintf(`offset $%d`, placeholderCount)
+	selectArgs = append(selectArgs, strconv.Itoa(options.offset))
+
 	const queryHead = `select * from courses where `
-	return queryHead + queryWhere + queryLimit, selectArgs, nil
+	return queryHead + queryWhere + queryLimit + queryOffset, selectArgs, nil
 }
 
 func searchCourse(query string, args []interface{}) ([]CoursesDB, error) {
