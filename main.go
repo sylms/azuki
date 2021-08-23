@@ -190,6 +190,9 @@ func validateSearchCourseOptions(courseName string, courseNameFilterType string,
 		if err != nil {
 			return searchCourseOptions{}, errors.New("limit is not int")
 		}
+		if limitInt < 0 {
+			return searchCourseOptions{}, errors.New("limit is negative")
+		}
 	}
 
 	var offsetInt int

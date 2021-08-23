@@ -116,6 +116,20 @@ func Test_validateSearchCourseOptions(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "limit < 0",
+			args: args{
+				courseName:               "情報",
+				courseNameFilterType:     "and",
+				courseOverview:           "科学",
+				courseOverviewFilterType: "and",
+				filterType:               "andandand",
+				limit:                    "-50",
+				offset:                   "50",
+			},
+			want:    searchCourseOptions{},
+			wantErr: true,
+		},
+		{
 			name: "offset is text",
 			args: args{
 				courseName:               "情報",
