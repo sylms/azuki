@@ -73,6 +73,7 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 	courseOverviewFilterType := q.Get("course_overview_filter_type")
 	filterType := q.Get("filter_type")
 	limit := q.Get("limit")
+	offset := q.Get("offset")
 
 	// if !(filterType == "and" || filterType == "or") {
 	// 	w.WriteHeader(http.StatusBadRequest)
@@ -97,6 +98,19 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var offsetInt int
+	if offset == "" {
+		// offset = 0 であれば offset を指定しないときと同じ結果を得られる
+		offsetInt = 0
+	} else {
+		var err error
+		offsetInt, err = strconv.Atoi(offset)
+		if err != nil || offsetInt < 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+
 	// SQL クエリ文字列を構築
 	queryStr, queryArgs, err := buildSearchCourseQuery(searchCourseOptions{
 		courseName:               courseName,
@@ -105,6 +119,7 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 		courseOverviewFilterType: courseOverviewFilterType,
 		filterType:               filterType,
 		limit:                    limitInt,
+		offset:                   offsetInt,
 	})
 	if err != nil {
 		log.Printf("%+v", err)
