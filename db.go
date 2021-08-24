@@ -23,19 +23,8 @@ type searchCourseOptions struct {
 	offset                   int
 }
 
-// searchCourseOptions を元に DB へ投げるクエリ文字列とそれら引数を作成する
+// validateSearchCourseOptions() の返り値の searchCourseOptions を元に DB へ投げるクエリ文字列とそれら引数を作成する
 func buildSearchCourseQuery(options searchCourseOptions) (string, []interface{}, error) {
-	allowedFilterType := []string{filterTypeAnd, filterTypeOr}
-	if !util.Contains(allowedFilterType, options.filterType) {
-		return "", nil, fmt.Errorf("filterType error: %s, %+v", options.filterType, allowedFilterType)
-	}
-	if !util.Contains(allowedFilterType, options.courseNameFilterType) {
-		return "", nil, fmt.Errorf("courseNameFilterType error: %s, %+v", options.filterType, allowedFilterType)
-	}
-	if !util.Contains(allowedFilterType, options.courseOverviewFilterType) {
-		return "", nil, fmt.Errorf("courseOverviewFilterType error: %s, %+v", options.filterType, allowedFilterType)
-	}
-
 	// PostgreSQL へ渡す $1, $2 プレースホルダーのインクリメント
 	placeholderCount := 1
 

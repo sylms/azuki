@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/rs/cors"
+	"github.com/sylms/azuki/util"
 )
 
 var (
@@ -80,47 +82,15 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	// どのカラムも検索対象としていなければ検索そのものが実行できないので、不正なリクエストである
-	if courseName == "" && courseOverview == "" {
+	options, err := validateSearchCourseOptions(courseName, courseNameFilterType, courseOverview, courseOverviewFilterType, filterType, limit, offset)
+	if err != nil {
+		log.Printf("%+v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	var limitInt int
-	if limit == "" {
-		limitInt = searchQueryDefaultLimit
-	} else {
-		var err error
-		limitInt, err = strconv.Atoi(limit)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-	}
-
-	var offsetInt int
-	if offset == "" {
-		// offset = 0 であれば offset を指定しないときと同じ結果を得られる
-		offsetInt = 0
-	} else {
-		var err error
-		offsetInt, err = strconv.Atoi(offset)
-		if err != nil || offsetInt < 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-	}
-
 	// SQL クエリ文字列を構築
-	queryStr, queryArgs, err := buildSearchCourseQuery(searchCourseOptions{
-		courseName:               courseName,
-		courseNameFilterType:     courseNameFilterType,
-		courseOverview:           courseOverview,
-		courseOverviewFilterType: courseOverviewFilterType,
-		filterType:               filterType,
-		limit:                    limitInt,
-		offset:                   offsetInt,
-	})
+	queryStr, queryArgs, err := buildSearchCourseQuery(options)
 	if err != nil {
 		log.Printf("%+v", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -191,4 +161,62 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write(j)
+}
+
+// 各パラメーターに問題がないかを確認し、問題なければ整形したものを返す
+func validateSearchCourseOptions(courseName string, courseNameFilterType string, courseOverview string, courseOverviewFilterType string, filterType string, limit string, offset string) (searchCourseOptions, error) {
+	allowedFilterType := []string{filterTypeAnd, filterTypeOr}
+	if !util.Contains(allowedFilterType, filterType) {
+		return searchCourseOptions{}, fmt.Errorf("filterType error: %s, %+v", filterType, allowedFilterType)
+	}
+	if !util.Contains(allowedFilterType, courseNameFilterType) {
+		return searchCourseOptions{}, fmt.Errorf("courseNameFilterType error: %s, %+v", courseNameFilterType, allowedFilterType)
+	}
+	if !util.Contains(allowedFilterType, courseOverviewFilterType) {
+		return searchCourseOptions{}, fmt.Errorf("courseOverviewFilterType error: %s, %+v", courseOverviewFilterType, allowedFilterType)
+	}
+
+	// どのカラムも検索対象としていなければ検索そのものが実行できないので、不正なリクエストである
+	if courseName == "" && courseOverview == "" {
+		return searchCourseOptions{}, errors.New("course_name and course_overview are empty")
+	}
+
+	var limitInt int
+	if limit == "" {
+		limitInt = searchQueryDefaultLimit
+	} else {
+		var err error
+		limitInt, err = strconv.Atoi(limit)
+		if err != nil {
+			return searchCourseOptions{}, errors.New("limit is not int")
+		}
+		if limitInt < 0 {
+			return searchCourseOptions{}, errors.New("limit is negative")
+		}
+	}
+
+	var offsetInt int
+	if offset == "" {
+		// offset = 0 であれば offset を指定しないときと同じ結果を得られる
+		offsetInt = 0
+	} else {
+		var err error
+		offsetInt, err = strconv.Atoi(offset)
+		if err != nil {
+			return searchCourseOptions{}, errors.New("offset is not int")
+		}
+		if offsetInt < 0 {
+			return searchCourseOptions{}, errors.New("offset is negative")
+		}
+	}
+
+	return searchCourseOptions{
+		courseName:               courseName,
+		courseNameFilterType:     courseNameFilterType,
+		courseOverview:           courseOverview,
+		courseOverviewFilterType: courseOverviewFilterType,
+		filterType:               filterType,
+		limit:                    limitInt,
+		offset:                   offsetInt,
+	}, nil
 }
