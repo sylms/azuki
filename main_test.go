@@ -88,6 +88,28 @@ func Test_validateSearchCourseOptions(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "courseName: not exist",
+			args: args{
+				courseName:               "",
+				courseNameFilterType:     "",
+				courseOverview:           "科学",
+				courseOverviewFilterType: "and",
+				filterType:               "and",
+				limit:                    "100",
+				offset:                   "50",
+			},
+			want: searchCourseOptions{
+				courseName:               "",
+				courseNameFilterType:     "",
+				courseOverview:           "科学",
+				courseOverviewFilterType: "and",
+				filterType:               "and",
+				limit:                    100,
+				offset:                   50,
+			},
+			wantErr: false,
+		},
+		{
 			name: "courseOverviewFilterType: invalid",
 			args: args{
 				courseName:               "情報",
@@ -114,6 +136,28 @@ func Test_validateSearchCourseOptions(t *testing.T) {
 			},
 			want:    searchCourseOptions{},
 			wantErr: true,
+		},
+		{
+			name: "courseOverview: not exist",
+			args: args{
+				courseName:               "情報",
+				courseNameFilterType:     "and",
+				courseOverview:           "",
+				courseOverviewFilterType: "",
+				filterType:               "and",
+				limit:                    "100",
+				offset:                   "50",
+			},
+			want: searchCourseOptions{
+				courseName:               "情報",
+				courseNameFilterType:     "and",
+				courseOverview:           "",
+				courseOverviewFilterType: "",
+				filterType:               "and",
+				limit:                    100,
+				offset:                   50,
+			},
+			wantErr: false,
 		},
 		{
 			name: "filterType: invalid",
