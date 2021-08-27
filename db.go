@@ -74,6 +74,9 @@ func buildSearchCourseQuery(options searchCourseOptions) (string, []interface{},
 		}
 	}
 
+	// order by
+	const queryOrderBy = "order by id asc "
+
 	// limit 部分を構築
 	queryLimit := fmt.Sprintf(`limit $%d `, placeholderCount)
 	placeholderCount++
@@ -84,7 +87,7 @@ func buildSearchCourseQuery(options searchCourseOptions) (string, []interface{},
 	selectArgs = append(selectArgs, strconv.Itoa(options.offset))
 
 	const queryHead = `select * from courses where `
-	return queryHead + queryWhere + queryLimit + queryOffset, selectArgs, nil
+	return queryHead + queryWhere + queryOrderBy + queryLimit + queryOffset, selectArgs, nil
 }
 
 func searchCourse(query string, args []interface{}) ([]CoursesDB, error) {
