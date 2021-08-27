@@ -169,10 +169,10 @@ func validateSearchCourseOptions(courseName string, courseNameFilterType string,
 	if !util.Contains(allowedFilterType, filterType) {
 		return searchCourseOptions{}, fmt.Errorf("filterType error: %s, %+v", filterType, allowedFilterType)
 	}
-	if !util.Contains(allowedFilterType, courseNameFilterType) {
+	if courseName != "" && !util.Contains(allowedFilterType, courseNameFilterType) {
 		return searchCourseOptions{}, fmt.Errorf("courseNameFilterType error: %s, %+v", courseNameFilterType, allowedFilterType)
 	}
-	if !util.Contains(allowedFilterType, courseOverviewFilterType) {
+	if courseOverview != "" && !util.Contains(allowedFilterType, courseOverviewFilterType) {
 		return searchCourseOptions{}, fmt.Errorf("courseOverviewFilterType error: %s, %+v", courseOverviewFilterType, allowedFilterType)
 	}
 
