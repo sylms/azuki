@@ -115,17 +115,9 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: わざわざ2つ定義しているのは面倒なのでひとつにしたい
 	var coursesJSON []CourseJSON
 	for _, c := range courses {
-		var sry []string
-		c.StandardRegistrationYear.Scan(&sry)
 
 		var term []int
 		c.Term.Scan(&term)
-
-		var period []string
-		c.Period.Scan(&period)
-
-		var instructor []string
-		c.Instructor.Scan(&instructor)
 
 		courseJSON := CourseJSON{
 			ID:                       c.ID,
@@ -133,11 +125,11 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 			CourseName:               c.CourseName,
 			InstructionalType:        c.InstructionalType,
 			Credits:                  c.Credits,
-			StandardRegistrationYear: sry,
+			StandardRegistrationYear: c.StandardRegistrationYear,
 			Term:                     term,
-			Period:                   period,
+			Period:                   c.Period,
 			Classroom:                newNullString(c.Classroom.String, c.Classroom.Valid),
-			Instructor:               instructor,
+			Instructor:               c.Instructor,
 			CourseOverview:           newNullString(c.CourseOverview.String, c.CourseOverview.Valid),
 			Remarks:                  newNullString(c.Remarks.String, c.Remarks.Valid),
 			CreditedAuditors:         c.CreditedAuditors,
