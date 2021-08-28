@@ -56,11 +56,8 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 	for _, c := range courses {
 
 		var term []int
-		err = c.Term.Scan(&term)
-		if err != nil {
-			log.Printf("%+v", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
+		for _, i := range c.Term {
+			term = append(term, int(i))
 		}
 
 		courseJSON := CourseJSON{
