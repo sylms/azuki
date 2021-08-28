@@ -70,7 +70,7 @@ func buildSearchCourseQuery(options searchCourseOptions) (string, []interface{},
 		if queryWhere == "" {
 			queryWhere = queryCourseOverview
 		} else {
-			queryWhere += "and " + queryCourseOverview
+			queryWhere += "or " + queryCourseOverview
 		}
 	}
 
