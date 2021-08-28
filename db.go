@@ -63,13 +63,13 @@ func buildSearchCourseQuery(options searchCourseOptions) (string, []interface{},
 	// 若干無理矢理な気もするのできれいにしたい
 	queryWhere := ""
 	if queryCourseName != "" {
-		queryWhere += queryCourseName
+		queryWhere += "(" + queryCourseName + ")"
 	}
 	if queryCourseOverview != "" {
 		if queryWhere == "" {
-			queryWhere = queryCourseOverview
+			queryWhere = "(" + queryCourseOverview + ")"
 		} else {
-			queryWhere += options.filterType + " " + queryCourseOverview
+			queryWhere += " " + options.filterType + " (" + queryCourseOverview + ")"
 		}
 	}
 
