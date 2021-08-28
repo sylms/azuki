@@ -29,6 +29,28 @@ func Test_buildSearchCourseQuery(t *testing.T) {
 					offset:                   50,
 				},
 			},
+			want: `select * from courses where course_name like $1 and course_overview like $2 order by id asc limit $3 offset $4`,
+			want1: []interface{}{
+				`%情報%`,
+				`%科学%`,
+				"100",
+				"50",
+			},
+			wantErr: false,
+		},
+		{
+			name: "filterType: or",
+			args: args{
+				options: searchCourseOptions{
+					courseName:               "情報",
+					courseNameFilterType:     "and",
+					courseOverview:           "科学",
+					courseOverviewFilterType: "and",
+					filterType:               "or",
+					limit:                    100,
+					offset:                   50,
+				},
+			},
 			want: `select * from courses where course_name like $1 or course_overview like $2 order by id asc limit $3 offset $4`,
 			want1: []interface{}{
 				`%情報%`,

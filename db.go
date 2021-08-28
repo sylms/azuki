@@ -60,7 +60,6 @@ func buildSearchCourseQuery(options searchCourseOptions) (string, []interface{},
 		selectArgs = append(selectArgs, "%"+courseOverview+"%")
 	}
 
-	// とりあえず各カラムの検索結果は AND でつなげるように
 	// 若干無理矢理な気もするのできれいにしたい
 	queryWhere := ""
 	if queryCourseName != "" {
@@ -70,7 +69,7 @@ func buildSearchCourseQuery(options searchCourseOptions) (string, []interface{},
 		if queryWhere == "" {
 			queryWhere = queryCourseOverview
 		} else {
-			queryWhere += "or " + queryCourseOverview
+			queryWhere += options.filterType + " " + queryCourseOverview
 		}
 	}
 
