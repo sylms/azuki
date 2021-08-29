@@ -52,7 +52,7 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 
 	// CourseDB -> CourseJSON
 	// TODO: わざわざ2つ定義しているのは面倒なのでひとつにしたい
-	var coursesJSON []CourseJSON
+	coursesJSON := []CourseJSON{}
 	for _, c := range courses {
 
 		var term []int
