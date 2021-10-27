@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 )
 
 func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
@@ -29,15 +28,7 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	courseName := query.CourseName
-	courseNameFilterType := query.CourseNameFilterType
-	courseOverview := query.CourseOverview
-	courseOverviewFilterType := query.CourseOverviewFilterType
-	filterType := query.FilterType
-	limit := strconv.Itoa(query.Limit)
-	offset := strconv.Itoa(query.Offset)
-
-	options, err := validateSearchCourseOptions(courseName, courseNameFilterType, courseOverview, courseOverviewFilterType, filterType, limit, offset)
+	options, err := validateSearchCourseOptions(query)
 	if err != nil {
 		log.Printf("%+v", err)
 		w.WriteHeader(http.StatusBadRequest)

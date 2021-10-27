@@ -99,59 +99,46 @@ func searchCourse(query string, args []interface{}) ([]CoursesDB, error) {
 }
 
 // 各パラメーターに問題がないかを確認し、問題なければ整形したものを返す
-func validateSearchCourseOptions(courseName string, courseNameFilterType string, courseOverview string, courseOverviewFilterType string, filterType string, limit string, offset string) (searchCourseOptions, error) {
+func validateSearchCourseOptions(query CourseQuery) (searchCourseOptions, error) {
+
 	allowedFilterType := []string{filterTypeAnd, filterTypeOr}
-	if !util.Contains(allowedFilterType, filterType) {
-		return searchCourseOptions{}, fmt.Errorf("filterType error: %s, %+v", filterType, allowedFilterType)
+	emptyQuert := true
+	if !util.Contains(allowedFilterType, query.FilterType) {
+		return searchCourseOptions{}, fmt.Errorf("FilterType error: %s, %+v", query.FilterType, allowedFilterType)
 	}
-	if courseName != "" && !util.Contains(allowedFilterType, courseNameFilterType) {
-		return searchCourseOptions{}, fmt.Errorf("courseNameFilterType error: %s, %+v", courseNameFilterType, allowedFilterType)
+	if query.CourseName != "" {
+		if !util.Contains(allowedFilterType, query.CourseNameFilterType) {
+			return searchCourseOptions{}, fmt.Errorf("CourseNameFilterType error: %s, %+v", query.CourseNameFilterType, allowedFilterType)
+		}
+		emptyQuert = false
 	}
-	if courseOverview != "" && !util.Contains(allowedFilterType, courseOverviewFilterType) {
-		return searchCourseOptions{}, fmt.Errorf("courseOverviewFilterType error: %s, %+v", courseOverviewFilterType, allowedFilterType)
+	if query.CourseOverview != "" {
+		if !util.Contains(allowedFilterType, query.CourseOverviewFilterType) {
+			return searchCourseOptions{}, fmt.Errorf("CourseOverviewFilterType error: %s, %+v", query.CourseOverviewFilterType, allowedFilterType)
+		}
+		emptyQuert = false
 	}
 
 	// どのカラムも検索対象としていなければ検索そのものが実行できないので、不正なリクエストである
-	if courseName == "" && courseOverview == "" {
-		return searchCourseOptions{}, errors.New("course_name and course_overview are empty")
+	if emptyQuert {
+		return searchCourseOptions{}, errors.New("all query string is empty")
 	}
 
-	var limitInt int
-	if limit == "" {
-		limitInt = searchQueryDefaultLimit
-	} else {
-		var err error
-		limitInt, err = strconv.Atoi(limit)
-		if err != nil {
-			return searchCourseOptions{}, errors.New("limit is not int")
-		}
-		if limitInt < 0 {
-			return searchCourseOptions{}, errors.New("limit is negative")
-		}
+	if query.Limit < 0 {
+		return searchCourseOptions{}, errors.New("limit is negative")
 	}
 
-	var offsetInt int
-	if offset == "" {
-		// offset = 0 であれば offset を指定しないときと同じ結果を得られる
-		offsetInt = 0
-	} else {
-		var err error
-		offsetInt, err = strconv.Atoi(offset)
-		if err != nil {
-			return searchCourseOptions{}, errors.New("offset is not int")
-		}
-		if offsetInt < 0 {
-			return searchCourseOptions{}, errors.New("offset is negative")
-		}
+	if query.Offset < 0 {
+		return searchCourseOptions{}, errors.New("offset is negative")
 	}
 
 	return searchCourseOptions{
-		courseName:               courseName,
-		courseNameFilterType:     courseNameFilterType,
-		courseOverview:           courseOverview,
-		courseOverviewFilterType: courseOverviewFilterType,
-		filterType:               filterType,
-		limit:                    limitInt,
-		offset:                   offsetInt,
+		courseName:               query.CourseName,
+		courseNameFilterType:     query.CourseNameFilterType,
+		courseOverview:           query.CourseOverview,
+		courseOverviewFilterType: query.CourseOverviewFilterType,
+		filterType:               query.FilterType,
+		limit:                    query.Limit,
+		offset:                   query.Offset,
 	}, nil
 }
