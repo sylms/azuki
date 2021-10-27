@@ -26,7 +26,7 @@ func Test_validateSearchCourseOptions(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "パラメーターが全て存在していない",
+			name: "一部パラメーターのみ存在する(つまり (全て存在する または 全て存在しない)ではない)",
 			args: CourseQuery{
 				CourseName:               "",
 				CourseNameFilterType:     "and",
@@ -39,7 +39,7 @@ func Test_validateSearchCourseOptions(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "パラメーターが全て存在していない",
+			name: "一部パラメーターのみ存在する(つまり (全て存在する または 全て存在しない)ではない)",
 			args: CourseQuery{
 				CourseName:               "情報",
 				CourseNameFilterType:     "and",

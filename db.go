@@ -92,7 +92,7 @@ func searchCourse(query string, args []interface{}) ([]CoursesDB, error) {
 func validateSearchCourseOptions(query CourseQuery) error {
 
 	allowedFilterType := []string{filterTypeAnd, filterTypeOr}
-	emptyQuert := true
+	emptyQuery := true
 	if !util.Contains(allowedFilterType, query.FilterType) {
 		return fmt.Errorf("FilterType error: %s, %+v", query.FilterType, allowedFilterType)
 	}
@@ -100,17 +100,17 @@ func validateSearchCourseOptions(query CourseQuery) error {
 		if !util.Contains(allowedFilterType, query.CourseNameFilterType) {
 			return fmt.Errorf("CourseNameFilterType error: %s, %+v", query.CourseNameFilterType, allowedFilterType)
 		}
-		emptyQuert = false
+		emptyQuery = false
 	}
 	if query.CourseOverview != "" {
 		if !util.Contains(allowedFilterType, query.CourseOverviewFilterType) {
 			return fmt.Errorf("CourseOverviewFilterType error: %s, %+v", query.CourseOverviewFilterType, allowedFilterType)
 		}
-		emptyQuert = false
+		emptyQuery = false
 	}
 
 	// どのカラムも検索対象としていなければ検索そのものが実行できないので、不正なリクエストである
-	if emptyQuert {
+	if emptyQuery {
 		return errors.New("all query str parameter is empty")
 	}
 
