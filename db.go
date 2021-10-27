@@ -88,7 +88,6 @@ func searchCourse(query string, args []interface{}) ([]CoursesDB, error) {
 	return result, nil
 }
 
-// 各パラメーターに問題がないかを確認し、問題なければ整形したものを返す
 func validateSearchCourseOptions(query CourseQuery) error {
 
 	allowedFilterType := []string{filterTypeAnd, filterTypeOr}
