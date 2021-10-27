@@ -110,7 +110,7 @@ func validateSearchCourseOptions(query CourseQuery) error {
 
 	// どのカラムも検索対象としていなければ検索そのものが実行できないので、不正なリクエストである
 	if emptyQuert {
-		return errors.New("all query str parameter is empty")
+		return errors.New("all parameter is empty")
 	}
 
 	if query.Limit < 0 {
