@@ -88,7 +88,6 @@ func searchCourse(query string, args []interface{}) ([]CoursesDB, error) {
 	return result, nil
 }
 
-// 各パラメーターに問題がないかを確認し、問題なければ整形したものを返す
 func validateSearchCourseOptions(query CourseQuery) error {
 
 	allowedFilterType := []string{filterTypeAnd, filterTypeOr}
@@ -111,7 +110,7 @@ func validateSearchCourseOptions(query CourseQuery) error {
 
 	// どのカラムも検索対象としていなければ検索そのものが実行できないので、不正なリクエストである
 	if emptyQuery {
-		return errors.New("all query str parameter is empty")
+		return errors.New("all parameter is empty")
 	}
 
 	if query.Limit < 0 {
