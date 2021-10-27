@@ -4,22 +4,38 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	courseName := q.Get("course_name")
-	courseNameFilterType := q.Get("course_name_filter_type")
-	courseOverview := q.Get("course_overview")
-	courseOverviewFilterType := q.Get("course_overview_filter_type")
-	filterType := q.Get("filter_type")
-	limit := q.Get("limit")
-	offset := q.Get("offset")
 
-	// if !(filterType == "and" || filterType == "or") {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	return
-	// }
+	//Validate request
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		w.WriteHeader(http.StatusUnsupportedMediaType)
+		return
+	}
+
+	//parse json
+	var query CourseQuery
+	err := json.NewDecoder(r.Body).Decode(&query)
+	if err != nil {
+		log.Printf("%+v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	courseName := query.CourseName
+	courseNameFilterType := query.CourseNameFilterType
+	courseOverview := query.CourseOverview
+	courseOverviewFilterType := query.CourseOverviewFilterType
+	filterType := query.FilterType
+	limit := strconv.Itoa(query.Limit)
+	offset := strconv.Itoa(query.Offset)
 
 	options, err := validateSearchCourseOptions(courseName, courseNameFilterType, courseOverview, courseOverviewFilterType, filterType, limit, offset)
 	if err != nil {
