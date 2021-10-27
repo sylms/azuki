@@ -25,7 +25,7 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&query)
 	if err != nil {
 		log.Printf("%+v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
