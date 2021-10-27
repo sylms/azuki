@@ -11,7 +11,7 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 
 	//Validate request
 	if r.Method != "POST" {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
