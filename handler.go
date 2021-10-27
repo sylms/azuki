@@ -28,7 +28,7 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	options, err := validateSearchCourseOptions(query)
+	err = validateSearchCourseOptions(query)
 	if err != nil {
 		log.Printf("%+v", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -36,7 +36,7 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// SQL クエリ文字列を構築
-	queryStr, queryArgs, err := buildSearchCourseQuery(options)
+	queryStr, queryArgs, err := buildSearchCourseQuery(query)
 	if err != nil {
 		log.Printf("%+v", err)
 		w.WriteHeader(http.StatusBadRequest)
