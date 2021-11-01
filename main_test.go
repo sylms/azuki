@@ -1,244 +1,206 @@
 package main
 
 import (
-	"reflect"
 	"testing"
 
 	_ "github.com/lib/pq"
 )
 
 func Test_validateSearchCourseOptions(t *testing.T) {
-	type args struct {
-		courseName               string
-		courseNameFilterType     string
-		courseOverview           string
-		courseOverviewFilterType string
-		filterType               string
-		limit                    string
-		offset                   string
-	}
 	tests := []struct {
 		name    string
-		args    args
-		want    searchCourseOptions
+		args    CourseQuery
 		wantErr bool
 	}{
 		{
 			name: "exist all parameter",
-			args: args{
-				courseName:               "情報",
-				courseNameFilterType:     "and",
-				courseOverview:           "科学",
-				courseOverviewFilterType: "and",
-				filterType:               "and",
-				limit:                    "100",
-				offset:                   "50",
-			},
-			want: searchCourseOptions{
-				courseName:               "情報",
-				courseNameFilterType:     "and",
-				courseOverview:           "科学",
-				courseOverviewFilterType: "and",
-				filterType:               "and",
-				limit:                    100,
-				offset:                   50,
+			args: CourseQuery{
+				CourseName:               "情報",
+				CourseNameFilterType:     "and",
+				CourseOverview:           "科学",
+				CourseOverviewFilterType: "and",
+				FilterType:               "and",
+				Limit:                    100,
+				Offset:                   50,
 			},
 			wantErr: false,
 		},
 		{
-			name: "courseName and courseOverview are empty",
-			args: args{
-				courseName:               "",
-				courseNameFilterType:     "and",
-				courseOverview:           "",
-				courseOverviewFilterType: "and",
-				filterType:               "and",
-				limit:                    "100",
-				offset:                   "50",
-			},
-			want:    searchCourseOptions{},
-			wantErr: true,
-		},
-		{
-			name: "courseNameFilterType: invalid",
-			args: args{
-				courseName:               "情報",
-				courseNameFilterType:     "andandand",
-				courseOverview:           "科学",
-				courseOverviewFilterType: "and",
-				filterType:               "and",
-				limit:                    "100",
-				offset:                   "50",
-			},
-			want:    searchCourseOptions{},
-			wantErr: true,
-		},
-		{
-			name: "courseName: exist, courseNameFilterType: not exist",
-			args: args{
-				courseName:               "情報",
-				courseNameFilterType:     "",
-				courseOverview:           "科学",
-				courseOverviewFilterType: "and",
-				filterType:               "and",
-				limit:                    "100",
-				offset:                   "50",
-			},
-			want:    searchCourseOptions{},
-			wantErr: true,
-		},
-		{
-			name: "courseName: not exist",
-			args: args{
-				courseName:               "",
-				courseNameFilterType:     "",
-				courseOverview:           "科学",
-				courseOverviewFilterType: "and",
-				filterType:               "and",
-				limit:                    "100",
-				offset:                   "50",
-			},
-			want: searchCourseOptions{
-				courseName:               "",
-				courseNameFilterType:     "",
-				courseOverview:           "科学",
-				courseOverviewFilterType: "and",
-				filterType:               "and",
-				limit:                    100,
-				offset:                   50,
+			name: "一部パラメーターのみ存在する(つまり (全て存在する または 全て存在しない)ではない)",
+			args: CourseQuery{
+				CourseName:               "",
+				CourseNameFilterType:     "and",
+				CourseOverview:           "科学",
+				CourseOverviewFilterType: "and",
+				FilterType:               "and",
+				Limit:                    100,
+				Offset:                   50,
 			},
 			wantErr: false,
 		},
 		{
-			name: "courseOverviewFilterType: invalid",
-			args: args{
-				courseName:               "情報",
-				courseNameFilterType:     "and",
-				courseOverview:           "科学",
-				courseOverviewFilterType: "andandand",
-				filterType:               "and",
-				limit:                    "100",
-				offset:                   "50",
-			},
-			want:    searchCourseOptions{},
-			wantErr: true,
-		},
-		{
-			name: "courseOverview: exist, courseOverviewFilterType: not exist",
-			args: args{
-				courseName:               "情報",
-				courseNameFilterType:     "and",
-				courseOverview:           "科学",
-				courseOverviewFilterType: "",
-				filterType:               "and",
-				limit:                    "100",
-				offset:                   "50",
-			},
-			want:    searchCourseOptions{},
-			wantErr: true,
-		},
-		{
-			name: "courseOverview: not exist",
-			args: args{
-				courseName:               "情報",
-				courseNameFilterType:     "and",
-				courseOverview:           "",
-				courseOverviewFilterType: "",
-				filterType:               "and",
-				limit:                    "100",
-				offset:                   "50",
-			},
-			want: searchCourseOptions{
-				courseName:               "情報",
-				courseNameFilterType:     "and",
-				courseOverview:           "",
-				courseOverviewFilterType: "",
-				filterType:               "and",
-				limit:                    100,
-				offset:                   50,
+			name: "一部パラメーターのみ存在する(つまり (全て存在する または 全て存在しない)ではない)",
+			args: CourseQuery{
+				CourseName:               "情報",
+				CourseNameFilterType:     "and",
+				CourseOverview:           "",
+				CourseOverviewFilterType: "and",
+				FilterType:               "and",
+				Limit:                    100,
+				Offset:                   50,
 			},
 			wantErr: false,
 		},
 		{
-			name: "filterType: invalid",
-			args: args{
-				courseName:               "情報",
-				courseNameFilterType:     "and",
-				courseOverview:           "科学",
-				courseOverviewFilterType: "and",
-				filterType:               "andandand",
-				limit:                    "100",
-				offset:                   "50",
+			name: "パラメーターが存在していないもののフィルタータイプが異常(エラーは発生しない)",
+			args: CourseQuery{
+				CourseName:               "",
+				CourseNameFilterType:     "fake",
+				CourseOverview:           "科学",
+				CourseOverviewFilterType: "and",
+				FilterType:               "and",
+				Limit:                    100,
+				Offset:                   50,
 			},
-			want:    searchCourseOptions{},
+			wantErr: false,
+		},
+		{
+			name: "パラメーターが存在していないもののフィルタータイプが異常(エラーは発生しない)",
+			args: CourseQuery{
+				CourseName:               "情報",
+				CourseNameFilterType:     "and",
+				CourseOverview:           "",
+				CourseOverviewFilterType: "fake",
+				FilterType:               "and",
+				Limit:                    100,
+				Offset:                   50,
+			},
+			wantErr: false,
+		},
+		{
+			name: "all str is empty",
+			args: CourseQuery{
+				CourseName:               "",
+				CourseNameFilterType:     "and",
+				CourseOverview:           "",
+				CourseOverviewFilterType: "and",
+				FilterType:               "and",
+				Limit:                    100,
+				Offset:                   50,
+			},
 			wantErr: true,
 		},
 		{
-			name: "limit is text",
-			args: args{
-				courseName:               "情報",
-				courseNameFilterType:     "and",
-				courseOverview:           "科学",
-				courseOverviewFilterType: "and",
-				filterType:               "andandand",
-				limit:                    "fake",
-				offset:                   "50",
+			name: "cause FilterType error",
+			args: CourseQuery{
+				CourseName:               "情報",
+				CourseNameFilterType:     "and",
+				CourseOverview:           "科学",
+				CourseOverviewFilterType: "and",
+				FilterType:               "andor",
+				Limit:                    100,
+				Offset:                   50,
 			},
-			want:    searchCourseOptions{},
 			wantErr: true,
 		},
 		{
-			name: "limit < 0",
-			args: args{
-				courseName:               "情報",
-				courseNameFilterType:     "and",
-				courseOverview:           "科学",
-				courseOverviewFilterType: "and",
-				filterType:               "andandand",
-				limit:                    "-50",
-				offset:                   "50",
+			name: "cause FilterType is empty error",
+			args: CourseQuery{
+				CourseName:               "情報",
+				CourseNameFilterType:     "and",
+				CourseOverview:           "科学",
+				CourseOverviewFilterType: "and",
+				FilterType:               "",
+				Limit:                    100,
+				Offset:                   50,
 			},
-			want:    searchCourseOptions{},
 			wantErr: true,
 		},
 		{
-			name: "offset is text",
-			args: args{
-				courseName:               "情報",
-				courseNameFilterType:     "and",
-				courseOverview:           "科学",
-				courseOverviewFilterType: "and",
-				filterType:               "andandand",
-				limit:                    "100",
-				offset:                   "fake",
+			name: "cause CourseNameFilterType error",
+			args: CourseQuery{
+				CourseName:               "情報",
+				CourseNameFilterType:     "andor",
+				CourseOverview:           "科学",
+				CourseOverviewFilterType: "and",
+				FilterType:               "and",
+				Limit:                    100,
+				Offset:                   50,
 			},
-			want:    searchCourseOptions{},
 			wantErr: true,
 		},
 		{
-			name: "offset < 0",
-			args: args{
-				courseName:               "情報",
-				courseNameFilterType:     "and",
-				courseOverview:           "科学",
-				courseOverviewFilterType: "and",
-				filterType:               "andandand",
-				limit:                    "100",
-				offset:                   "-50",
+			name: "cause CourseNameFilterType is empty error",
+			args: CourseQuery{
+				CourseName:               "情報",
+				CourseNameFilterType:     "",
+				CourseOverview:           "科学",
+				CourseOverviewFilterType: "and",
+				FilterType:               "and",
+				Limit:                    100,
+				Offset:                   50,
 			},
-			want:    searchCourseOptions{},
+			wantErr: true,
+		},
+		{
+			name: "cause CourseOverviewFilterType error",
+			args: CourseQuery{
+				CourseName:               "情報",
+				CourseNameFilterType:     "and",
+				CourseOverview:           "科学",
+				CourseOverviewFilterType: "andor",
+				FilterType:               "and",
+				Limit:                    100,
+				Offset:                   50,
+			},
+			wantErr: true,
+		},
+		{
+			name: "cause CourseOverviewFilterType is empty error",
+			args: CourseQuery{
+				CourseName:               "情報",
+				CourseNameFilterType:     "and",
+				CourseOverview:           "科学",
+				CourseOverviewFilterType: "",
+				FilterType:               "and",
+				Limit:                    100,
+				Offset:                   50,
+			},
+			wantErr: true,
+		},
+		{
+			name: "limit is negative",
+			args: CourseQuery{
+				CourseName:               "情報",
+				CourseNameFilterType:     "and",
+				CourseOverview:           "科学",
+				CourseOverviewFilterType: "and",
+				FilterType:               "and",
+				Limit:                    -10,
+				Offset:                   50,
+			},
+			wantErr: true,
+		},
+		{
+			name: "offset is negative",
+			args: CourseQuery{
+				CourseName:               "情報",
+				CourseNameFilterType:     "and",
+				CourseOverview:           "科学",
+				CourseOverviewFilterType: "and",
+				FilterType:               "and",
+				Limit:                    100,
+				Offset:                   -100,
+			},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := validateSearchCourseOptions(tt.args.courseName, tt.args.courseNameFilterType, tt.args.courseOverview, tt.args.courseOverviewFilterType, tt.args.filterType, tt.args.limit, tt.args.offset)
+			err := validateSearchCourseOptions(tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("validateSearchCourseOptions() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("validateSearchCourseOptions() = %v, want %v", got, tt.want)
 			}
 		})
 	}

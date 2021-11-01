@@ -6,28 +6,23 @@ import (
 )
 
 func Test_buildSearchCourseQuery(t *testing.T) {
-	type args struct {
-		options searchCourseOptions
-	}
 	tests := []struct {
 		name    string
-		args    args
+		args    CourseQuery
 		want    string
 		want1   []interface{}
 		wantErr bool
 	}{
 		{
 			name: "exist all parameter",
-			args: args{
-				options: searchCourseOptions{
-					courseName:               "情報",
-					courseNameFilterType:     "and",
-					courseOverview:           "科学",
-					courseOverviewFilterType: "and",
-					filterType:               "and",
-					limit:                    100,
-					offset:                   50,
-				},
+			args: CourseQuery{
+				CourseName:               "情報",
+				CourseNameFilterType:     "and",
+				CourseOverview:           "科学",
+				CourseOverviewFilterType: "and",
+				FilterType:               "and",
+				Limit:                    100,
+				Offset:                   50,
 			},
 			want: `select * from courses where ( course_name like $1 ) and ( course_overview like $2 ) order by id asc limit $3 offset $4`,
 			want1: []interface{}{
@@ -40,16 +35,14 @@ func Test_buildSearchCourseQuery(t *testing.T) {
 		},
 		{
 			name: "filterType: or",
-			args: args{
-				options: searchCourseOptions{
-					courseName:               "情報",
-					courseNameFilterType:     "and",
-					courseOverview:           "科学",
-					courseOverviewFilterType: "and",
-					filterType:               "or",
-					limit:                    100,
-					offset:                   50,
-				},
+			args: CourseQuery{
+				CourseName:               "情報",
+				CourseNameFilterType:     "and",
+				CourseOverview:           "科学",
+				CourseOverviewFilterType: "and",
+				FilterType:               "or",
+				Limit:                    100,
+				Offset:                   50,
 			},
 			want: `select * from courses where ( course_name like $1 ) or ( course_overview like $2 ) order by id asc limit $3 offset $4`,
 			want1: []interface{}{
@@ -62,16 +55,14 @@ func Test_buildSearchCourseQuery(t *testing.T) {
 		},
 		{
 			name: "empty: courseName",
-			args: args{
-				options: searchCourseOptions{
-					courseName:               "",
-					courseNameFilterType:     "and",
-					courseOverview:           "科学",
-					courseOverviewFilterType: "and",
-					filterType:               "and",
-					limit:                    100,
-					offset:                   50,
-				},
+			args: CourseQuery{
+				CourseName:               "",
+				CourseNameFilterType:     "and",
+				CourseOverview:           "科学",
+				CourseOverviewFilterType: "and",
+				FilterType:               "and",
+				Limit:                    100,
+				Offset:                   50,
 			},
 			want: `select * from courses where ( course_overview like $1 ) order by id asc limit $2 offset $3`,
 			want1: []interface{}{
@@ -83,16 +74,14 @@ func Test_buildSearchCourseQuery(t *testing.T) {
 		},
 		{
 			name: "empty: course_overview",
-			args: args{
-				options: searchCourseOptions{
-					courseName:               "情報",
-					courseNameFilterType:     "and",
-					courseOverview:           "",
-					courseOverviewFilterType: "and",
-					filterType:               "and",
-					limit:                    100,
-					offset:                   50,
-				},
+			args: CourseQuery{
+				CourseName:               "情報",
+				CourseNameFilterType:     "and",
+				CourseOverview:           "",
+				CourseOverviewFilterType: "and",
+				FilterType:               "and",
+				Limit:                    100,
+				Offset:                   50,
 			},
 			want: `select * from courses where ( course_name like $1 ) order by id asc limit $2 offset $3`,
 			want1: []interface{}{
@@ -105,7 +94,7 @@ func Test_buildSearchCourseQuery(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := buildSearchCourseQuery(tt.args.options)
+			got, got1, err := buildSearchCourseQuery(tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("buildSearchCourseQuery() error = %v, wantErr %v", err, tt.wantErr)
 				return
