@@ -37,16 +37,18 @@ func buildSimpleQuery(rawStr string, filterType string, dbColumnName string, sel
 func connectEachSimpleQuery(queryCourseName string, queryCourseOverview string, filterType string) (string, error) {
 	resStr := ""
 	if queryCourseName != "" {
-		resStr += "( " + queryCourseName + ") "
+		if resStr != "" {
+			resStr += filterType
+		}
+		resStr += "(" + queryCourseName + ")"
 	}
 	if queryCourseOverview != "" {
-		if resStr == "" {
-			resStr = "( " + queryCourseOverview + ") "
-		} else {
-			resStr += filterType + " ( " + queryCourseOverview + ") "
+		if resStr != "" {
+			resStr += filterType
 		}
+		resStr += "(" + queryCourseOverview + ")"
 	}
-	return resStr, nil
+	return "(" + resStr + ")", nil
 }
 
 // validateSearchCourseOptions() の返り値の searchCourseOptions を元に DB へ投げるクエリ文字列とそれら引数を作成する
