@@ -13,42 +13,40 @@ const (
 	filterTypeOr  = "or"
 )
 
+// buildSearchCourseQuery からの切り分け
+// 空白区切りで分割し指定されたフィルタータイプで繋いだクエリを生成する。
+// 与えられたプレースホルダーカウントの値から順にプレースホルダーに整数を割り当てていく
+func buildSimpleQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}, error) {
+	separatedStrList := util.SplitSpace(rawStr)
+	resQuery := ""
+	for count, separseparatedStr := range separatedStrList {
+		if count == 0 {
+			resQuery += fmt.Sprintf(`%s like $%d `, dbColumnName, placeholderCount)
+		} else {
+			resQuery += fmt.Sprintf(`%s %s like $%d `, filterType, dbColumnName, placeholderCount)
+		}
+		placeholderCount++
+		// 現時点では、キーワードを含むものを検索
+		selectArgs = append(selectArgs, "%"+separseparatedStr+"%")
+	}
+	return resQuery, placeholderCount, selectArgs, nil
+}
+
 // validateSearchCourseOptions() の返り値の searchCourseOptions を元に DB へ投げるクエリ文字列とそれら引数を作成する
 func buildSearchCourseQuery(options CourseQuery) (string, []interface{}, error) {
-	// PostgreSQL へ渡す $1, $2 プレースホルダーのインクリメント
+	// それぞれのカラムに対してカラム内検索の AND/OR が指定されている場合はそれで構築を行なう
+	// それぞれのカラムに対して検索文字列を構築したらそれぞれの間を FilterType で埋める
+	// 全体に対して offset, limit を指定する
+
+	// PostgreSQL へ渡す $1, $2 プレースホルダーのインクリメントのカウンタ
 	placeholderCount := 1
 
 	// PostgreSQL へ渡す select 文のプレースホルダーに割り当てる変数を格納
 	selectArgs := []interface{}{}
 
-	// スペース区切りとみなして単語を分割
-	courseNames := util.SplitSpace(options.CourseName)
-	courseOverviews := util.SplitSpace(options.CourseOverview)
-
 	// where 部分を構築
-	queryCourseName := ""
-	for count, courseName := range courseNames {
-		if count == 0 {
-			queryCourseName += fmt.Sprintf(`course_name like $%d `, placeholderCount)
-		} else {
-			queryCourseName += fmt.Sprintf(`%s course_name like $%d `, options.CourseNameFilterType, placeholderCount)
-		}
-		placeholderCount++
-		// 現時点では、キーワードを含むものを検索
-		selectArgs = append(selectArgs, "%"+courseName+"%")
-	}
-
-	queryCourseOverview := ""
-	for count, courseOverview := range courseOverviews {
-		if count == 0 {
-			queryCourseOverview += fmt.Sprintf(`course_overview like $%d `, placeholderCount)
-		} else {
-			queryCourseOverview += fmt.Sprintf(`%s course_overview like $%d `, options.CourseOverviewFilterType, placeholderCount)
-		}
-		placeholderCount++
-		// 現時点では、キーワードを含むものを検索
-		selectArgs = append(selectArgs, "%"+courseOverview+"%")
-	}
+	queryCourseName, placeholderCount, selectArgs, _ := buildSimpleQuery(options.CourseName, options.CourseNameFilterType, "course_name", selectArgs, placeholderCount)
+	queryCourseOverview, placeholderCount, selectArgs, _ := buildSimpleQuery(options.CourseOverview, options.CourseOverviewFilterType, "course_overview", selectArgs, placeholderCount)
 
 	// 若干無理矢理な気もするのできれいにしたい
 	queryWhere := ""
