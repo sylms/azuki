@@ -16,6 +16,7 @@ const (
 // buildSearchCourseQuery からの切り分け
 // 空白区切りで分割し指定されたフィルタータイプで繋いだクエリを生成する。
 // 与えられたプレースホルダーカウントの値から順にプレースホルダーに整数を割り当てていく
+// TODO : create test
 func buildSimpleQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}, error) {
 	separatedStrList := util.SplitSpace(rawStr)
 	resQuery := ""
@@ -34,19 +35,16 @@ func buildSimpleQuery(rawStr string, filterType string, dbColumnName string, sel
 
 // buildSearchCourseQuery からの切り分け
 // TODO : 汎用的にしたい、str の配列などで
-func connectEachSimpleQuery(queryCourseName string, queryCourseOverview string, filterType string) (string, error) {
+// TODO : create test
+func connectEachSimpleQuery(queryLists []string, filterType string) (string, error) {
 	resStr := ""
-	if queryCourseName != "" {
-		if resStr != "" {
-			resStr += filterType
+	for _, query := range queryLists {
+		if query != "" {
+			if resStr != "" {
+				resStr += filterType
+			}
+			resStr += "(" + query + ")"
 		}
-		resStr += "(" + queryCourseName + ")"
-	}
-	if queryCourseOverview != "" {
-		if resStr != "" {
-			resStr += filterType
-		}
-		resStr += "(" + queryCourseOverview + ")"
 	}
 	return "(" + resStr + ")", nil
 }
@@ -63,12 +61,17 @@ func buildSearchCourseQuery(options CourseQuery) (string, []interface{}, error) 
 	// PostgreSQL へ渡す select 文のプレースホルダーに割り当てる変数を格納
 	selectArgs := []interface{}{}
 
+	// それぞれのカラムに対する小さなクエリの集合
+	queryLists := []string{}
+
 	// where 部分を構築
 	queryCourseName, placeholderCount, selectArgs, _ := buildSimpleQuery(options.CourseName, options.CourseNameFilterType, "course_name", selectArgs, placeholderCount)
+	queryLists = append(queryLists, queryCourseName)
 	queryCourseOverview, placeholderCount, selectArgs, _ := buildSimpleQuery(options.CourseOverview, options.CourseOverviewFilterType, "course_overview", selectArgs, placeholderCount)
+	queryLists = append(queryLists, queryCourseOverview)
 
 	// カラムごとに生成されたクエリを接続
-	queryWhere, _ := connectEachSimpleQuery(queryCourseName, queryCourseOverview, options.FilterType)
+	queryWhere, _ := connectEachSimpleQuery(queryLists, options.FilterType)
 
 	// order by
 	const queryOrderBy = "order by id asc "
