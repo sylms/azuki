@@ -69,6 +69,8 @@ func buildSearchCourseQuery(options CourseQuery) (string, []interface{}, error) 
 	queryLists = append(queryLists, queryCourseName)
 	queryCourseOverview, placeholderCount, selectArgs, _ := buildSimpleQuery(options.CourseOverview, options.CourseOverviewFilterType, "course_overview", selectArgs, placeholderCount)
 	queryLists = append(queryLists, queryCourseOverview)
+	queryCourseNumber, placeholderCount, selectArgs, _ := buildSimpleQuery(options.CourseNumber, options.CourseOverviewFilterType, "course_number", selectArgs, placeholderCount)
+	queryLists = append(queryLists, queryCourseNumber)
 
 	// カラムごとに生成されたクエリを接続
 	queryWhere, _ := connectEachSimpleQuery(queryLists, options.FilterType)
@@ -104,6 +106,9 @@ func validateSearchCourseOptions(query CourseQuery) error {
 	emptyQuery := true
 	if !util.Contains(allowedFilterType, query.FilterType) {
 		return fmt.Errorf("FilterType error: %s, %+v", query.FilterType, allowedFilterType)
+	}
+	if query.CourseNumber != "" {
+		emptyQuery = false
 	}
 	if query.CourseName != "" {
 		if !util.Contains(allowedFilterType, query.CourseNameFilterType) {
