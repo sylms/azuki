@@ -24,7 +24,7 @@ func Test_buildSearchCourseQuery(t *testing.T) {
 				Limit:                    100,
 				Offset:                   50,
 			},
-			want: `select * from courses where ( course_name like $1 ) and ( course_overview like $2 ) order by id asc limit $3 offset $4`,
+			want: `select * from courses where ((course_name like $1 )and(course_overview like $2 ))order by id asc limit $3 offset $4`,
 			want1: []interface{}{
 				`%情報%`,
 				`%科学%`,
@@ -44,7 +44,7 @@ func Test_buildSearchCourseQuery(t *testing.T) {
 				Limit:                    100,
 				Offset:                   50,
 			},
-			want: `select * from courses where ( course_name like $1 ) or ( course_overview like $2 ) order by id asc limit $3 offset $4`,
+			want: `select * from courses where ((course_name like $1 )or(course_overview like $2 ))order by id asc limit $3 offset $4`,
 			want1: []interface{}{
 				`%情報%`,
 				`%科学%`,
@@ -64,7 +64,7 @@ func Test_buildSearchCourseQuery(t *testing.T) {
 				Limit:                    100,
 				Offset:                   50,
 			},
-			want: `select * from courses where ( course_overview like $1 ) order by id asc limit $2 offset $3`,
+			want: `select * from courses where ((course_overview like $1 ))order by id asc limit $2 offset $3`,
 			want1: []interface{}{
 				`%科学%`,
 				"100",
@@ -83,7 +83,7 @@ func Test_buildSearchCourseQuery(t *testing.T) {
 				Limit:                    100,
 				Offset:                   50,
 			},
-			want: `select * from courses where ( course_name like $1 ) order by id asc limit $2 offset $3`,
+			want: `select * from courses where ((course_name like $1 ))order by id asc limit $2 offset $3`,
 			want1: []interface{}{
 				`%情報%`,
 				"100",
