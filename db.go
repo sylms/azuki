@@ -17,7 +17,7 @@ const (
 // 空白区切りで分割し指定されたフィルタータイプで繋いだクエリを生成する。
 // 与えられたプレースホルダーカウントの値から順にプレースホルダーに整数を割り当てていく
 // TODO : create test
-func buildSimpleQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}, error) {
+func buildSimpleQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}) {
 	separatedStrList := util.SplitSpace(rawStr)
 	resQuery := ""
 	for count, separseparatedStr := range separatedStrList {
@@ -30,13 +30,13 @@ func buildSimpleQuery(rawStr string, filterType string, dbColumnName string, sel
 		// 現時点では、キーワードを含むものを検索
 		selectArgs = append(selectArgs, "%"+separseparatedStr+"%")
 	}
-	return resQuery, placeholderCount, selectArgs, nil
+	return resQuery, placeholderCount, selectArgs
 }
 
 // buildSearchCourseQuery からの切り分け
 // TODO : 汎用的にしたい、str の配列などで
 // TODO : create test
-func connectEachSimpleQuery(queryLists []string, filterType string) (string, error) {
+func connectEachSimpleQuery(queryLists []string, filterType string) string {
 	resStr := ""
 	for _, query := range queryLists {
 		if query != "" {
@@ -46,7 +46,7 @@ func connectEachSimpleQuery(queryLists []string, filterType string) (string, err
 			resStr += "(" + query + ")"
 		}
 	}
-	return "(" + resStr + ")", nil
+	return "(" + resStr + ")"
 }
 
 // validateSearchCourseOptions() の返り値の searchCourseOptions を元に DB へ投げるクエリ文字列とそれら引数を作成する
@@ -65,15 +65,15 @@ func buildSearchCourseQuery(options CourseQuery) (string, []interface{}, error) 
 	queryLists := []string{}
 
 	// where 部分を構築
-	queryCourseName, placeholderCount, selectArgs, _ := buildSimpleQuery(options.CourseName, options.CourseNameFilterType, "course_name", selectArgs, placeholderCount)
+	queryCourseName, placeholderCount, selectArgs := buildSimpleQuery(options.CourseName, options.CourseNameFilterType, "course_name", selectArgs, placeholderCount)
 	queryLists = append(queryLists, queryCourseName)
-	queryCourseOverview, placeholderCount, selectArgs, _ := buildSimpleQuery(options.CourseOverview, options.CourseOverviewFilterType, "course_overview", selectArgs, placeholderCount)
+	queryCourseOverview, placeholderCount, selectArgs := buildSimpleQuery(options.CourseOverview, options.CourseOverviewFilterType, "course_overview", selectArgs, placeholderCount)
 	queryLists = append(queryLists, queryCourseOverview)
-	queryCourseNumber, placeholderCount, selectArgs, _ := buildSimpleQuery(options.CourseNumber, options.CourseOverviewFilterType, "course_number", selectArgs, placeholderCount)
+	queryCourseNumber, placeholderCount, selectArgs := buildSimpleQuery(options.CourseNumber, options.CourseOverviewFilterType, "course_number", selectArgs, placeholderCount)
 	queryLists = append(queryLists, queryCourseNumber)
 
 	// カラムごとに生成されたクエリを接続
-	queryWhere, _ := connectEachSimpleQuery(queryLists, options.FilterType)
+	queryWhere := connectEachSimpleQuery(queryLists, options.FilterType)
 
 	// order by
 	const queryOrderBy = "order by id asc "
