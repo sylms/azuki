@@ -32,6 +32,23 @@ func buildSimpleQuery(rawStr string, filterType string, dbColumnName string, sel
 	return resQuery, placeholderCount, selectArgs, nil
 }
 
+// buildSearchCourseQuery からの切り分け
+// TODO : 汎用的にしたい、str の配列などで
+func connectEachSimpleQuery(queryCourseName string, queryCourseOverview string, filterType string) (string, error) {
+	resStr := ""
+	if queryCourseName != "" {
+		resStr += "( " + queryCourseName + ") "
+	}
+	if queryCourseOverview != "" {
+		if resStr == "" {
+			resStr = "( " + queryCourseOverview + ") "
+		} else {
+			resStr += filterType + " ( " + queryCourseOverview + ") "
+		}
+	}
+	return resStr, nil
+}
+
 // validateSearchCourseOptions() の返り値の searchCourseOptions を元に DB へ投げるクエリ文字列とそれら引数を作成する
 func buildSearchCourseQuery(options CourseQuery) (string, []interface{}, error) {
 	// それぞれのカラムに対してカラム内検索の AND/OR が指定されている場合はそれで構築を行なう
@@ -48,18 +65,8 @@ func buildSearchCourseQuery(options CourseQuery) (string, []interface{}, error) 
 	queryCourseName, placeholderCount, selectArgs, _ := buildSimpleQuery(options.CourseName, options.CourseNameFilterType, "course_name", selectArgs, placeholderCount)
 	queryCourseOverview, placeholderCount, selectArgs, _ := buildSimpleQuery(options.CourseOverview, options.CourseOverviewFilterType, "course_overview", selectArgs, placeholderCount)
 
-	// 若干無理矢理な気もするのできれいにしたい
-	queryWhere := ""
-	if queryCourseName != "" {
-		queryWhere += "( " + queryCourseName + ") "
-	}
-	if queryCourseOverview != "" {
-		if queryWhere == "" {
-			queryWhere = "( " + queryCourseOverview + ") "
-		} else {
-			queryWhere += options.FilterType + " ( " + queryCourseOverview + ") "
-		}
-	}
+	// カラムごとに生成されたクエリを接続
+	queryWhere, _ := connectEachSimpleQuery(queryCourseName, queryCourseOverview, options.FilterType)
 
 	// order by
 	const queryOrderBy = "order by id asc "
