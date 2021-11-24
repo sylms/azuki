@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sylms/azuki/util"
@@ -29,6 +30,26 @@ func buildSimpleQuery(rawStr string, filterType string, dbColumnName string, sel
 		placeholderCount++
 		// 現時点では、キーワードを含むものを検索
 		selectArgs = append(selectArgs, "%"+separseparatedStr+"%")
+	}
+	return resQuery, placeholderCount, selectArgs
+}
+
+// buildSearchCourseQuery からの切り分け
+// 空白区切りで分割し指定されたフィルタータイプで繋いだクエリを生成する。
+// 与えられたプレースホルダーカウントの値から順にプレースホルダーに整数を割り当てていく
+// TODO : create test
+func buildArrayQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}) {
+	separatedStrList, _ := periodParser(rawStr)
+	resQuery := ""
+	for count, separseparatedStr := range separatedStrList {
+		if count == 0 {
+			resQuery += fmt.Sprintf(`$%d = ANY(%s) `, placeholderCount, dbColumnName)
+		} else {
+			resQuery += fmt.Sprintf(`%s $%d = ANY(%s) `, filterType, placeholderCount, dbColumnName)
+		}
+		placeholderCount++
+		// 現時点では、キーワードを含むものを検索
+		selectArgs = append(selectArgs, separseparatedStr)
 	}
 	return resQuery, placeholderCount, selectArgs
 }
@@ -71,6 +92,9 @@ func buildSearchCourseQuery(options CourseQuery) (string, []interface{}, error) 
 	queryLists = append(queryLists, queryCourseOverview)
 	queryCourseNumber, placeholderCount, selectArgs := buildSimpleQuery(options.CourseNumber, options.CourseOverviewFilterType, "course_number", selectArgs, placeholderCount)
 	queryLists = append(queryLists, queryCourseNumber)
+	fmt.Printf("===%s===\n", options.Period)
+	queryPeriod, placeholderCount, selectArgs := buildArrayQuery(options.Period, options.CourseOverviewFilterType, "period_", selectArgs, placeholderCount)
+	queryLists = append(queryLists, queryPeriod)
 
 	// カラムごとに生成されたクエリを接続
 	queryWhere := connectEachSimpleQuery(queryLists, options.FilterType)
@@ -122,6 +146,9 @@ func validateSearchCourseOptions(query CourseQuery) error {
 		}
 		emptyQuery = false
 	}
+	if query.Period != "" {
+		emptyQuery = false
+	}
 
 	// どのカラムも検索対象としていなければ検索そのものが実行できないので、不正なリクエストである
 	if emptyQuery {
@@ -137,4 +164,66 @@ func validateSearchCourseOptions(query CourseQuery) error {
 	}
 
 	return nil
+}
+
+// csv2sql からのコピペいい感じにモジュールとして入れたい
+func periodParser(periodString string) ([]string, error) {
+	period := []string{}
+	periodString = strings.Replace(periodString, " ", "", -1)
+	periodString = strings.Replace(periodString, "　", "", -1)
+	periodString = strings.Replace(periodString, "ー", "-", -1)
+	periodString = strings.Replace(periodString, "・", "", -1)
+	periodString = strings.Replace(periodString, ",", "", -1)
+	periodString = strings.Replace(periodString, "集中", "集0", -1)
+	periodString = strings.Replace(periodString, "応談", "応0", -1)
+	periodString = strings.Replace(periodString, "随時", "随0", -1)
+
+	for i := 1; i <= 8; i++ {
+		listPeriod := strconv.Itoa(i)
+		for j := i + 1; j <= 8; j++ {
+			listPeriod = listPeriod + strconv.Itoa(j)
+			spanPeriod := strconv.Itoa(i) + "-" + strconv.Itoa(j)
+			periodString = strings.Replace(periodString, spanPeriod, listPeriod, -1)
+		}
+	}
+
+	for i := 0; i <= 8; i++ {
+		for _, dayOfWeek := range []string{"月", "火", "水", "木", "金", "土", "日", "応", "随", "集"} {
+			beforeStr1 := strconv.Itoa(i) + dayOfWeek
+			beforeStr2 := dayOfWeek + strconv.Itoa(i)
+			afterStr1 := strconv.Itoa(i) + "," + dayOfWeek
+			afterStr2 := dayOfWeek + ":" + strconv.Itoa(i)
+			periodString = strings.Replace(periodString, beforeStr1, afterStr1, -1)
+			periodString = strings.Replace(periodString, beforeStr2, afterStr2, -1)
+		}
+	}
+	if len(periodString) == 0 {
+		return period, nil
+	}
+	strList := strings.Split(periodString, ",")
+
+	for _, str := range strList {
+		strList2 := strings.Split(str, ":")
+		if len(strList2) != 2 {
+			fmt.Println("-" + periodString + "-")
+			return nil, errors.New("unexpected period input : " + str)
+		} else {
+			dayOfWeek := strList2[0]
+			timeTimetable := strList2[1]
+			for i := 0; i < len([]rune(dayOfWeek)); i++ {
+				for j := 0; j < len([]rune(timeTimetable)); j++ {
+					inputStr := string([]rune(dayOfWeek)[i]) + string([]rune(timeTimetable)[j])
+					inputStr = strings.Replace(inputStr, "集0", "集", -1)
+					inputStr = strings.Replace(inputStr, "集", "集中", -1)
+					inputStr = strings.Replace(inputStr, "随0", "随", -1)
+					inputStr = strings.Replace(inputStr, "随", "随時", -1)
+					inputStr = strings.Replace(inputStr, "応0", "応", -1)
+					inputStr = strings.Replace(inputStr, "応", "応談", -1)
+					period = append(period, inputStr)
+				}
+			}
+		}
+	}
+
+	return period, nil
 }
