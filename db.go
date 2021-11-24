@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -12,6 +13,22 @@ import (
 const (
 	filterTypeAnd = "and"
 	filterTypeOr  = "or"
+)
+
+const (
+	// 開講時期
+	_               = iota
+	termSpringACode // 春A: 1
+	termSpringBCode
+	termSpringCCode
+	termFallACode
+	termFallBCode
+	termFallCCode
+	termSummerVacationCode
+	termSpringVacationCode
+	termAllCode
+	termSpringCode
+	termFallCode
 )
 
 // buildSearchCourseQuery からの切り分け
@@ -35,11 +52,31 @@ func buildSimpleQuery(rawStr string, filterType string, dbColumnName string, sel
 }
 
 // buildSearchCourseQuery からの切り分け
-// 空白区切りで分割し指定されたフィルタータイプで繋いだクエリを生成する。
-// 与えられたプレースホルダーカウントの値から順にプレースホルダーに整数を割り当てていく
+// 単なるテキスト配列用
 // TODO : create test
 func buildArrayQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}) {
 	separatedStrList, _ := periodParser(rawStr)
+	resQuery := ""
+	for count, separseparatedStr := range separatedStrList {
+		if count == 0 {
+			resQuery += fmt.Sprintf(`$%d = ANY(%s) `, placeholderCount, dbColumnName)
+		} else {
+			resQuery += fmt.Sprintf(`%s $%d = ANY(%s) `, filterType, placeholderCount, dbColumnName)
+		}
+		placeholderCount++
+		// 現時点では、キーワードを含むものを検索
+		selectArgs = append(selectArgs, separseparatedStr)
+	}
+	return resQuery, placeholderCount, selectArgs
+}
+
+// buildSearchCourseQuery からの切り分け
+// 単なるテキスト配列用
+// TODO : create test
+func parseAndBuildArrayQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}) {
+	term := termParser(rawStr)
+	separatedStrList, _ := termStrToInt(term)
+
 	resQuery := ""
 	for count, separseparatedStr := range separatedStrList {
 		if count == 0 {
@@ -95,6 +132,8 @@ func buildSearchCourseQuery(options CourseQuery) (string, []interface{}, error) 
 	fmt.Printf("===%s===\n", options.Period)
 	queryPeriod, placeholderCount, selectArgs := buildArrayQuery(options.Period, options.CourseOverviewFilterType, "period_", selectArgs, placeholderCount)
 	queryLists = append(queryLists, queryPeriod)
+	queryTerm, placeholderCount, selectArgs := parseAndBuildArrayQuery(options.Term, options.CourseOverviewFilterType, "term", selectArgs, placeholderCount)
+	queryLists = append(queryLists, queryTerm)
 
 	// カラムごとに生成されたクエリを接続
 	queryWhere := connectEachSimpleQuery(queryLists, options.FilterType)
@@ -147,6 +186,10 @@ func validateSearchCourseOptions(query CourseQuery) error {
 		emptyQuery = false
 	}
 	if query.Period != "" {
+		emptyQuery = false
+	}
+
+	if query.Term != "" {
 		emptyQuery = false
 	}
 
@@ -226,4 +269,90 @@ func periodParser(periodString string) ([]string, error) {
 	}
 
 	return period, nil
+}
+
+func termStrToInt(term []string) ([]int, error) {
+	res := []int{}
+	for _, t := range term {
+		switch t {
+		case "春A":
+			res = append(res, termSpringACode)
+		case "春B":
+			res = append(res, termSpringBCode)
+		case "春C":
+			res = append(res, termSpringCCode)
+		case "秋A":
+			res = append(res, termFallACode)
+		case "秋B":
+			res = append(res, termFallBCode)
+		case "秋C":
+			res = append(res, termFallCCode)
+		case "夏季休業中":
+			res = append(res, termSummerVacationCode)
+		case "春季休業中":
+			res = append(res, termSpringVacationCode)
+		case "通年":
+			res = append(res, termAllCode)
+		case "春学期":
+			res = append(res, termSpringCode)
+		case "秋学期":
+			res = append(res, termFallCode)
+		default:
+			return nil, fmt.Errorf("invalid term string: %s", t)
+		}
+	}
+	return res, nil
+}
+
+func termParser(termString string) []string {
+	res := []string{}
+	if termString == "" {
+		return []string{}
+	}
+	var re *regexp.Regexp
+	re = regexp.MustCompile(`(春A|春AA|春AA|春AB|春BA|春AC|春CA|春ABC)`)
+	if re.MatchString(termString) {
+		res = append(res, "春A")
+	}
+	re = regexp.MustCompile(`(春B|春BA|春AB|春BB|春BB|春BC|春CB|春ABC)`)
+	if re.MatchString(termString) {
+		res = append(res, "春B")
+	}
+	re = regexp.MustCompile(`(春C|春CA|春AC|春CB|春BC|春CC|春CC|春ABC)`)
+	if re.MatchString(termString) {
+		res = append(res, "春C")
+	}
+	re = regexp.MustCompile(`(秋A|秋AA|秋AA|秋AB|秋BA|秋AC|秋CA|秋ABC)`)
+	if re.MatchString(termString) {
+		res = append(res, "秋A")
+	}
+	re = regexp.MustCompile(`(秋B|秋BA|秋AB|秋BB|秋BB|秋BC|秋CB|秋ABC)`)
+	if re.MatchString(termString) {
+		res = append(res, "秋B")
+	}
+	re = regexp.MustCompile(`(秋C|秋CA|秋AC|秋CB|秋BC|秋CC|秋CC|秋ABC)`)
+	if re.MatchString(termString) {
+		res = append(res, "秋C")
+	}
+	re = regexp.MustCompile(`(夏季休業中)`)
+	if re.MatchString(termString) {
+		res = append(res, "夏季休業中")
+	}
+	re = regexp.MustCompile(`(春季休業中)`)
+	if re.MatchString(termString) {
+		res = append(res, "春季休業中")
+	}
+	re = regexp.MustCompile(`(通年)`)
+	if re.MatchString(termString) {
+		res = append(res, "通年")
+	}
+	re = regexp.MustCompile(`(春学期)`)
+	if re.MatchString(termString) {
+		res = append(res, "春学期")
+	}
+	re = regexp.MustCompile(`(秋学期)`)
+	if re.MatchString(termString) {
+		res = append(res, "秋学期")
+	}
+	return res
 }
