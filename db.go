@@ -57,36 +57,44 @@ func buildSimpleQuery(rawStr string, filterType string, dbColumnName string, sel
 func buildArrayQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}) {
 	separatedStrList, _ := periodParser(rawStr)
 	resQuery := ""
-	for count, separseparatedStr := range separatedStrList {
-		if count == 0 {
-			resQuery += fmt.Sprintf(`$%d = ANY(%s) `, placeholderCount, dbColumnName)
-		} else {
-			resQuery += fmt.Sprintf(`%s $%d = ANY(%s) `, filterType, placeholderCount, dbColumnName)
+	if len(separatedStrList) != 0 {
+		resQuery += "array["
+		for count, separseparatedStr := range separatedStrList {
+			if count == 0 {
+				resQuery += fmt.Sprintf(`$%d`, placeholderCount)
+			} else {
+				resQuery += fmt.Sprintf(`, $%d`, placeholderCount)
+			}
+			placeholderCount++
+			// 現時点では、キーワードを含むものを検索
+			selectArgs = append(selectArgs, separseparatedStr)
 		}
-		placeholderCount++
-		// 現時点では、キーワードを含むものを検索
-		selectArgs = append(selectArgs, separseparatedStr)
+		resQuery += fmt.Sprintf(`]::varchar[] <@ %s`, dbColumnName)
 	}
 	return resQuery, placeholderCount, selectArgs
 }
 
 // buildSearchCourseQuery からの切り分け
-// 単なるテキスト配列用
+// 整数配列用
 // TODO : create test
 func parseAndBuildArrayQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}) {
 	term := termParser(rawStr)
 	separatedStrList, _ := termStrToInt(term)
 
 	resQuery := ""
-	for count, separseparatedStr := range separatedStrList {
-		if count == 0 {
-			resQuery += fmt.Sprintf(`$%d = ANY(%s) `, placeholderCount, dbColumnName)
-		} else {
-			resQuery += fmt.Sprintf(`%s $%d = ANY(%s) `, filterType, placeholderCount, dbColumnName)
+	if len(separatedStrList) != 0 {
+		resQuery += "array["
+		for count, separseparatedStr := range separatedStrList {
+			if count == 0 {
+				resQuery += fmt.Sprintf(`$%d`, placeholderCount)
+			} else {
+				resQuery += fmt.Sprintf(`, $%d`, placeholderCount)
+			}
+			placeholderCount++
+			// 現時点では、キーワードを含むものを検索
+			selectArgs = append(selectArgs, separseparatedStr)
 		}
-		placeholderCount++
-		// 現時点では、キーワードを含むものを検索
-		selectArgs = append(selectArgs, separseparatedStr)
+		resQuery += fmt.Sprintf(`]::int[] <@ %s`, dbColumnName)
 	}
 	return resQuery, placeholderCount, selectArgs
 }
@@ -129,7 +137,6 @@ func buildSearchCourseQuery(options CourseQuery) (string, []interface{}, error) 
 	queryLists = append(queryLists, queryCourseOverview)
 	queryCourseNumber, placeholderCount, selectArgs := buildSimpleQuery(options.CourseNumber, options.CourseOverviewFilterType, "course_number", selectArgs, placeholderCount)
 	queryLists = append(queryLists, queryCourseNumber)
-	fmt.Printf("===%s===\n", options.Period)
 	queryPeriod, placeholderCount, selectArgs := buildArrayQuery(options.Period, options.CourseOverviewFilterType, "period_", selectArgs, placeholderCount)
 	queryLists = append(queryLists, queryPeriod)
 	queryTerm, placeholderCount, selectArgs := parseAndBuildArrayQuery(options.Term, options.CourseOverviewFilterType, "term", selectArgs, placeholderCount)
