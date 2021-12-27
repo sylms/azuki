@@ -55,7 +55,14 @@ func buildSimpleQuery(rawStr string, filterType string, dbColumnName string, sel
 // 単なるテキスト配列用
 // TODO : create test
 func buildArrayQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}) {
-	separatedStrList, _ := periodParser(rawStr)
+	var separatedStrList []string
+	if dbColumnName == "period_" {
+		separatedStrList, _ = periodParser(rawStr)
+	}
+	if dbColumnName == "term" {
+		term := termParser(rawStr)
+		separatedStrList, _ = termStrToInt(term)
+	}
 	resQuery := ""
 	if len(separatedStrList) != 0 {
 		resQuery += "array["
@@ -70,31 +77,6 @@ func buildArrayQuery(rawStr string, filterType string, dbColumnName string, sele
 			selectArgs = append(selectArgs, separseparatedStr)
 		}
 		resQuery += fmt.Sprintf(`]::varchar[] <@ %s`, dbColumnName)
-	}
-	return resQuery, placeholderCount, selectArgs
-}
-
-// buildSearchCourseQuery からの切り分け
-// 整数配列用
-// TODO : create test
-func parseAndBuildArrayQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}) {
-	term := termParser(rawStr)
-	separatedStrList, _ := termStrToInt(term)
-
-	resQuery := ""
-	if len(separatedStrList) != 0 {
-		resQuery += "array["
-		for count, separseparatedStr := range separatedStrList {
-			if count == 0 {
-				resQuery += fmt.Sprintf(`$%d`, placeholderCount)
-			} else {
-				resQuery += fmt.Sprintf(`, $%d`, placeholderCount)
-			}
-			placeholderCount++
-			// 現時点では、キーワードを含むものを検索
-			selectArgs = append(selectArgs, separseparatedStr)
-		}
-		resQuery += fmt.Sprintf(`]::int[] <@ %s`, dbColumnName)
 	}
 	return resQuery, placeholderCount, selectArgs
 }
@@ -139,7 +121,7 @@ func buildSearchCourseQuery(options CourseQuery) (string, []interface{}, error) 
 	queryLists = append(queryLists, queryCourseNumber)
 	queryPeriod, placeholderCount, selectArgs := buildArrayQuery(options.Period, options.CourseOverviewFilterType, "period_", selectArgs, placeholderCount)
 	queryLists = append(queryLists, queryPeriod)
-	queryTerm, placeholderCount, selectArgs := parseAndBuildArrayQuery(options.Term, options.CourseOverviewFilterType, "term", selectArgs, placeholderCount)
+	queryTerm, placeholderCount, selectArgs := buildArrayQuery(options.Term, options.CourseOverviewFilterType, "term", selectArgs, placeholderCount)
 	queryLists = append(queryLists, queryTerm)
 
 	// カラムごとに生成されたクエリを接続
@@ -278,32 +260,32 @@ func periodParser(periodString string) ([]string, error) {
 	return period, nil
 }
 
-func termStrToInt(term []string) ([]int, error) {
-	res := []int{}
+func termStrToInt(term []string) ([]string, error) {
+	res := []string{}
 	for _, t := range term {
 		switch t {
 		case "春A":
-			res = append(res, termSpringACode)
+			res = append(res, strconv.Itoa(termSpringACode))
 		case "春B":
-			res = append(res, termSpringBCode)
+			res = append(res, strconv.Itoa(termSpringBCode))
 		case "春C":
-			res = append(res, termSpringCCode)
+			res = append(res, strconv.Itoa(termSpringCCode))
 		case "秋A":
-			res = append(res, termFallACode)
+			res = append(res, strconv.Itoa(termFallACode))
 		case "秋B":
-			res = append(res, termFallBCode)
+			res = append(res, strconv.Itoa(termFallBCode))
 		case "秋C":
-			res = append(res, termFallCCode)
+			res = append(res, strconv.Itoa(termFallCCode))
 		case "夏季休業中":
-			res = append(res, termSummerVacationCode)
+			res = append(res, strconv.Itoa(termSummerVacationCode))
 		case "春季休業中":
-			res = append(res, termSpringVacationCode)
+			res = append(res, strconv.Itoa(termSpringVacationCode))
 		case "通年":
-			res = append(res, termAllCode)
+			res = append(res, strconv.Itoa(termAllCode))
 		case "春学期":
-			res = append(res, termSpringCode)
+			res = append(res, strconv.Itoa(termSpringCode))
 		case "秋学期":
-			res = append(res, termFallCode)
+			res = append(res, strconv.Itoa(termFallCode))
 		default:
 			return nil, fmt.Errorf("invalid term string: %s", t)
 		}
