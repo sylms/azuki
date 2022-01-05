@@ -55,6 +55,7 @@ func main() {
 	// とりあえず科目名と授業概要で検索できるように
 	// TODO: course_name や course_overview を指定しない検索方法に対応
 	r.HandleFunc("/course", courseSimpleSearchHandler).Methods("POST")
+	r.HandleFunc("/facet", courseFacetSearchHandler).Methods("POST")
 	c := cors.Default().Handler(r)
 	log.Printf("Listen Port: %s", portStr)
 	err = http.ListenAndServe(fmt.Sprintf(":%s", portStr), c)

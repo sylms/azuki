@@ -35,6 +35,11 @@ type CoursesDB struct {
 	UpdatedAt                time.Time      `db:"updated_at"`
 }
 
+type FacetDB struct {
+	Term      int `db:"term"`
+	TermCount int `db:"term_count"`
+}
+
 type CourseJSON struct {
 	ID                       int        `json:"id"`
 	CourseNumber             string     `json:"course_number"`
@@ -76,4 +81,8 @@ type CourseQuery struct {
 	FilterType               string `json:"filter_type"`
 	Limit                    int    `json:"limit"`
 	Offset                   int    `json:"offset"`
+}
+
+type FacetJSON struct {
+	TermFacet map[int]int `json:"term_facet"`
 }

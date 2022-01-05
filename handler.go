@@ -105,3 +105,89 @@ func courseSimpleSearchHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%+v", err)
 	}
 }
+
+func courseFacetSearchHandler(w http.ResponseWriter, r *http.Request) {
+
+	//Validate request
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		w.WriteHeader(http.StatusUnsupportedMediaType)
+		return
+	}
+
+	//parse json
+	var query CourseQuery
+	err := json.NewDecoder(r.Body).Decode(&query)
+	if err != nil {
+		log.Printf("%+v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = validateSearchCourseOptions(query)
+	if err != nil {
+		log.Printf("%+v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// SQL クエリ文字列を構築
+	queryStr, queryArgs, err := buildGetFacetQuery(query)
+	if err != nil {
+		log.Printf("%+v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// DB へクエリを投げ結果を取得
+	courses, err := getFacet(queryStr, queryArgs)
+	if err != nil {
+		log.Printf("%+v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// if err != nil {
+	// 	log.Printf("%+v", err)
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	return
+	// }
+
+	// CourseDB -> FacetJSON
+	// TODO: わざわざ2つ定義しているのは面倒なのでひとつにしたい
+	// for _, c := range courses {
+
+	// 	var term []int
+	// 	for _, i := range c.Term {
+	// 		term = append(term, int(i))
+	// 	}
+
+	// 	FacetJSON := FacetJSON{
+	// 		// ID: c.ID,
+	// 		ID: 12345,
+	// 	}
+	// 	facetsJSON = append(facetsJSON, FacetJSON)
+	// }
+	termFacet := make(map[int]int)
+	for _, c := range courses {
+		termFacet[c.Term] = c.TermCount
+	}
+	facetJSON := FacetJSON{
+		TermFacet: termFacet,
+	}
+	j, err := json.Marshal(facetJSON)
+	if err != nil {
+		log.Printf("%+v", err)
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(j)
+	if err != nil {
+		log.Printf("%+v", err)
+	}
+}
