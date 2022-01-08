@@ -77,10 +77,10 @@ func buildArrayQuery(rawStr string, filterType string, dbColumnName string, sele
 			selectArgs = append(selectArgs, separseparatedStr)
 		}
 		if dbColumnName == "period_" {
-			resQuery += fmt.Sprintf(`]::varchar[] <@ %s`, dbColumnName)
+			resQuery += fmt.Sprintf(`]::varchar[] @> %s and array[]::varchar[] <> %s`, dbColumnName, dbColumnName)
 		}
 		if dbColumnName == "term" {
-			resQuery += fmt.Sprintf(`]::int[] <@ %s`, dbColumnName)
+			resQuery += fmt.Sprintf(`]::int[] @> %s and array[]::int[] <> %s`, dbColumnName, dbColumnName)
 		}
 	}
 	return resQuery, placeholderCount, selectArgs
