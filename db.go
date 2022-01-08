@@ -164,15 +164,15 @@ func buildGetFacetQuery(options CourseQuery) (string, []interface{}, error) {
 	queryLists := []string{}
 
 	// where 部分を構築
-	queryCourseName, placeholderCount, selectArgs := buildSimpleQuery(options.CourseName, options.CourseNameFilterType, "course_name", selectArgs, placeholderCount)
+	queryCourseName, _, selectArgs := buildSimpleQuery(options.CourseName, options.CourseNameFilterType, "course_name", selectArgs, placeholderCount)
 	queryLists = append(queryLists, queryCourseName)
-	queryCourseOverview, placeholderCount, selectArgs := buildSimpleQuery(options.CourseOverview, options.CourseOverviewFilterType, "course_overview", selectArgs, placeholderCount)
+	queryCourseOverview, _, selectArgs := buildSimpleQuery(options.CourseOverview, options.CourseOverviewFilterType, "course_overview", selectArgs, placeholderCount)
 	queryLists = append(queryLists, queryCourseOverview)
-	queryCourseNumber, placeholderCount, selectArgs := buildSimpleQuery(options.CourseNumber, options.CourseOverviewFilterType, "course_number", selectArgs, placeholderCount)
+	queryCourseNumber, _, selectArgs := buildSimpleQuery(options.CourseNumber, options.CourseOverviewFilterType, "course_number", selectArgs, placeholderCount)
 	queryLists = append(queryLists, queryCourseNumber)
-	queryPeriod, placeholderCount, selectArgs := buildArrayQuery(options.Period, options.CourseOverviewFilterType, "period_", selectArgs, placeholderCount)
+	queryPeriod, _, selectArgs := buildArrayQuery(options.Period, options.CourseOverviewFilterType, "period_", selectArgs, placeholderCount)
 	queryLists = append(queryLists, queryPeriod)
-	queryTerm, placeholderCount, selectArgs := buildArrayQuery(options.Term, options.CourseOverviewFilterType, "term", selectArgs, placeholderCount)
+	queryTerm, _, selectArgs := buildArrayQuery(options.Term, options.CourseOverviewFilterType, "term", selectArgs, placeholderCount)
 	queryLists = append(queryLists, queryTerm)
 
 	// カラムごとに生成されたクエリを接続
