@@ -76,7 +76,12 @@ func buildArrayQuery(rawStr string, filterType string, dbColumnName string, sele
 			// 現時点では、キーワードを含むものを検索
 			selectArgs = append(selectArgs, separseparatedStr)
 		}
-		resQuery += fmt.Sprintf(`]::varchar[] <@ %s`, dbColumnName)
+		if dbColumnName == "period_" {
+			resQuery += fmt.Sprintf(`]::varchar[] <@ %s`, dbColumnName)
+		}
+		if dbColumnName == "term" {
+			resQuery += fmt.Sprintf(`]::int[] <@ %s`, dbColumnName)
+		}
 	}
 	return resQuery, placeholderCount, selectArgs
 }
@@ -143,8 +148,63 @@ func buildSearchCourseQuery(options CourseQuery) (string, []interface{}, error) 
 	return queryHead + queryWhere + queryOrderBy + queryLimit + queryOffset, selectArgs, nil
 }
 
+// validateSearchCourseOptions() の返り値の searchCourseOptions を元に DB へ投げるクエリ文字列とそれら引数を作成する
+func buildGetFacetQuery(options CourseQuery) (string, []interface{}, error) {
+	// それぞれのカラムに対してカラム内検索の AND/OR が指定されている場合はそれで構築を行なう
+	// それぞれのカラムに対して検索文字列を構築したらそれぞれの間を FilterType で埋める
+	// 全体に対して offset, limit を指定する
+
+	// PostgreSQL へ渡す $1, $2 プレースホルダーのインクリメントのカウンタ
+	placeholderCount := 1
+
+	// PostgreSQL へ渡す select 文のプレースホルダーに割り当てる変数を格納
+	selectArgs := []interface{}{}
+
+	// それぞれのカラムに対する小さなクエリの集合
+	queryLists := []string{}
+
+	// where 部分を構築
+	queryCourseName, _, selectArgs := buildSimpleQuery(options.CourseName, options.CourseNameFilterType, "course_name", selectArgs, placeholderCount)
+	queryLists = append(queryLists, queryCourseName)
+	queryCourseOverview, _, selectArgs := buildSimpleQuery(options.CourseOverview, options.CourseOverviewFilterType, "course_overview", selectArgs, placeholderCount)
+	queryLists = append(queryLists, queryCourseOverview)
+	queryCourseNumber, _, selectArgs := buildSimpleQuery(options.CourseNumber, options.CourseOverviewFilterType, "course_number", selectArgs, placeholderCount)
+	queryLists = append(queryLists, queryCourseNumber)
+	queryPeriod, _, selectArgs := buildArrayQuery(options.Period, options.CourseOverviewFilterType, "period_", selectArgs, placeholderCount)
+	queryLists = append(queryLists, queryPeriod)
+	queryTerm, _, selectArgs := buildArrayQuery(options.Term, options.CourseOverviewFilterType, "term", selectArgs, placeholderCount)
+	queryLists = append(queryLists, queryTerm)
+
+	// カラムごとに生成されたクエリを接続
+	queryWhere := connectEachSimpleQuery(queryLists, options.FilterType)
+
+	// order by
+	// const queryOrderBy = "order by id asc "
+
+	// limit 部分を構築
+	// queryLimit := fmt.Sprintf(`limit $%d `, placeholderCount)
+	// placeholderCount++
+	// selectArgs = append(selectArgs, strconv.Itoa(options.Limit))
+
+	// offset 部分を構築
+	// queryOffset := fmt.Sprintf(`offset $%d`, placeholderCount)
+	// selectArgs = append(selectArgs, strconv.Itoa(options.Offset))
+
+	const queryHead = `select unnest(term) as term from courses where `
+	return `select term, count(term) as term_count from(` + queryHead + queryWhere + `) as s1 group by term`, selectArgs, nil
+}
+
 func searchCourse(query string, args []interface{}) ([]CoursesDB, error) {
 	var result []CoursesDB
+	err := db.Select(&result, query, args...)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return result, nil
+}
+
+func getFacet(query string, args []interface{}) ([]FacetDB, error) {
+	var result []FacetDB
 	err := db.Select(&result, query, args...)
 	if err != nil {
 		return nil, errors.WithStack(err)

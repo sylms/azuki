@@ -3,6 +3,7 @@ module github.com/sylms/azuki
 go 1.16
 
 require (
+	github.com/gocarina/gocsv v0.0.0-20211203214250-4735fba0c1d9 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/jmoiron/sqlx v1.3.4 // indirect
 	github.com/lib/pq v1.10.2 // indirect
