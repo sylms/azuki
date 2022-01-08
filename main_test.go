@@ -88,7 +88,7 @@ func Test_validateSearchCourseOptions(t *testing.T) {
 				Limit:                    100,
 				Offset:                   50,
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "cause FilterType error",
