@@ -144,7 +144,11 @@ func buildSearchCourseQuery(options CourseQuery) (string, []interface{}, error) 
 	queryOffset := fmt.Sprintf(`offset $%d`, placeholderCount)
 	selectArgs = append(selectArgs, strconv.Itoa(options.Offset))
 
-	const queryHead = `select * from courses where `
+	const queryHead = `select * from courses `
+	queryWhere = "where " + queryWhere
+	if queryWhere == "where ()" {
+		queryWhere = ""
+	}
 	return queryHead + queryWhere + queryOrderBy + queryLimit + queryOffset, selectArgs, nil
 }
 
@@ -178,19 +182,11 @@ func buildGetFacetQuery(options CourseQuery) (string, []interface{}, error) {
 	// カラムごとに生成されたクエリを接続
 	queryWhere := connectEachSimpleQuery(queryLists, options.FilterType)
 
-	// order by
-	// const queryOrderBy = "order by id asc "
-
-	// limit 部分を構築
-	// queryLimit := fmt.Sprintf(`limit $%d `, placeholderCount)
-	// placeholderCount++
-	// selectArgs = append(selectArgs, strconv.Itoa(options.Limit))
-
-	// offset 部分を構築
-	// queryOffset := fmt.Sprintf(`offset $%d`, placeholderCount)
-	// selectArgs = append(selectArgs, strconv.Itoa(options.Offset))
-
-	const queryHead = `select unnest(term) as term from courses where `
+	const queryHead = `select unnest(term) as term from courses `
+	queryWhere = "where " + queryWhere
+	if queryWhere == "where ()" {
+		queryWhere = ""
+	}
 	return `select term, count(term) as term_count from(` + queryHead + queryWhere + `) as s1 group by term`, selectArgs, nil
 }
 
@@ -215,36 +211,18 @@ func getFacet(query string, args []interface{}) ([]FacetDB, error) {
 func validateSearchCourseOptions(query CourseQuery) error {
 
 	allowedFilterType := []string{filterTypeAnd, filterTypeOr}
-	emptyQuery := true
 	if !util.Contains(allowedFilterType, query.FilterType) {
 		return fmt.Errorf("FilterType error: %s, %+v", query.FilterType, allowedFilterType)
-	}
-	if query.CourseNumber != "" {
-		emptyQuery = false
 	}
 	if query.CourseName != "" {
 		if !util.Contains(allowedFilterType, query.CourseNameFilterType) {
 			return fmt.Errorf("CourseNameFilterType error: %s, %+v", query.CourseNameFilterType, allowedFilterType)
 		}
-		emptyQuery = false
 	}
 	if query.CourseOverview != "" {
 		if !util.Contains(allowedFilterType, query.CourseOverviewFilterType) {
 			return fmt.Errorf("CourseOverviewFilterType error: %s, %+v", query.CourseOverviewFilterType, allowedFilterType)
 		}
-		emptyQuery = false
-	}
-	if query.Period != "" {
-		emptyQuery = false
-	}
-
-	if query.Term != "" {
-		emptyQuery = false
-	}
-
-	// どのカラムも検索対象としていなければ検索そのものが実行できないので、不正なリクエストである
-	if emptyQuery {
-		return errors.New("all parameter is empty")
 	}
 
 	if query.Limit < 0 {
