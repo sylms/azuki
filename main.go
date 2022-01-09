@@ -8,12 +8,10 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 	"github.com/rs/cors"
-)
-
-var (
-	db *sqlx.DB
+	"github.com/sylms/azuki/infrastructure/persistence"
+	"github.com/sylms/azuki/interface/handler"
+	"github.com/sylms/azuki/usecase"
 )
 
 const (
@@ -23,10 +21,6 @@ const (
 	envSylmsPostgresHostKey     = "SYLMS_POSTGRES_HOST"
 	envSylmsPostgresPortKey     = "SYLMS_POSTGRES_PORT"
 	envSylmsPort                = "SYLMS_PORT"
-)
-
-const (
-	searchQueryDefaultLimit = 50
 )
 
 func main() {
@@ -45,18 +39,19 @@ func main() {
 	postgresPort := os.Getenv(envSylmsPostgresPortKey)
 	portStr := os.Getenv(envSylmsPort)
 
-	var err error
-	db, err = sqlx.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", postgresHost, postgresPort, postgresUser, postgresPassword, postgresDb))
+	db, err := sqlx.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", postgresHost, postgresPort, postgresUser, postgresPassword, postgresDb))
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
 
+	persistence := persistence.NewCoursePersistence(db)
+	useCase := usecase.NewCourseUseCase(persistence)
+	handler := handler.NewCourseHandler(useCase)
+
 	r := mux.NewRouter()
-	// とりあえず科目名と授業概要で検索できるように
-	// TODO: course_name や course_overview を指定しない検索方法に対応
-	r.HandleFunc("/course", courseSimpleSearchHandler).Methods("POST")
-	r.HandleFunc("/facet", courseFacetSearchHandler).Methods("POST")
-	r.HandleFunc("/csv", courseCSVHandler).Methods("POST")
+	r.HandleFunc("/course", handler.Search).Methods("POST")
+	r.HandleFunc("/facet", handler.Facet).Methods("POST")
+	r.HandleFunc("/csv", handler.Csv).Methods("POST")
 	c := cors.Default().Handler(r)
 	log.Printf("Listen Port: %s", portStr)
 	err = http.ListenAndServe(fmt.Sprintf(":%s", portStr), c)

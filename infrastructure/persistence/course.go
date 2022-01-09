@@ -1,20 +1,20 @@
-package main
+package persistence
 
 import (
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
+	"github.com/sylms/azuki/domain"
 	"github.com/sylms/azuki/util"
 )
 
-const (
-	filterTypeAnd = "and"
-	filterTypeOr  = "or"
-)
-
+// TODO: csv2sql からパッケージとして読み込む
 const (
 	// 開講時期
 	_               = iota
@@ -31,79 +31,148 @@ const (
 	termFallCode
 )
 
-// buildSearchCourseQuery からの切り分け
-// 空白区切りで分割し指定されたフィルタータイプで繋いだクエリを生成する。
-// 与えられたプレースホルダーカウントの値から順にプレースホルダーに整数を割り当てていく
-// TODO : create test
-func buildSimpleQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}) {
-	separatedStrList := util.SplitSpace(rawStr)
-	resQuery := ""
-	for count, separseparatedStr := range separatedStrList {
-		if count == 0 {
-			resQuery += fmt.Sprintf(`%s like $%d `, dbColumnName, placeholderCount)
-		} else {
-			resQuery += fmt.Sprintf(`%s %s like $%d `, filterType, dbColumnName, placeholderCount)
-		}
-		placeholderCount++
-		// 現時点では、キーワードを含むものを検索
-		selectArgs = append(selectArgs, "%"+separseparatedStr+"%")
-	}
-	return resQuery, placeholderCount, selectArgs
+type CoursesPostgresql struct {
+	ID                       int            `db:"id"`
+	CourseNumber             string         `db:"course_number"`
+	CourseName               string         `db:"course_name"`
+	InstructionalType        int            `db:"instructional_type"`
+	Credits                  string         `db:"credits"`
+	StandardRegistrationYear pq.StringArray `db:"standard_registration_year"`
+	Term                     pq.Int64Array  `db:"term"`
+	Period                   pq.StringArray `db:"period_"`
+	Classroom                string         `db:"classroom"`
+	Instructor               pq.StringArray `db:"instructor"`
+	CourseOverview           string         `db:"course_overview"`
+	Remarks                  string         `db:"remarks"`
+	CreditedAuditors         int            `db:"credited_auditors"`
+	ApplicationConditions    string         `db:"application_conditions"`
+	AltCourseName            string         `db:"alt_course_name"`
+	CourseCode               string         `db:"course_code"`
+	CourseCodeName           string         `db:"course_code_name"`
+	CSVUpdatedAt             time.Time      `db:"csv_updated_at"`
+	Year                     int            `db:"year"`
+	CreatedAt                time.Time      `db:"created_at"`
+	UpdatedAt                time.Time      `db:"updated_at"`
 }
 
-// buildSearchCourseQuery からの切り分け
-// 単なるテキスト配列用
-// TODO : create test
-func buildArrayQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}) {
-	var separatedStrList []string
-	if dbColumnName == "period_" {
-		separatedStrList, _ = periodParser(rawStr)
-	}
-	if dbColumnName == "term" {
-		term := termParser(rawStr)
-		separatedStrList, _ = termStrToInt(term)
-	}
-	resQuery := ""
-	if len(separatedStrList) != 0 {
-		resQuery += "array["
-		for count, separseparatedStr := range separatedStrList {
-			if count == 0 {
-				resQuery += fmt.Sprintf(`$%d`, placeholderCount)
-			} else {
-				resQuery += fmt.Sprintf(`, $%d`, placeholderCount)
-			}
-			placeholderCount++
-			// 現時点では、キーワードを含むものを検索
-			selectArgs = append(selectArgs, separseparatedStr)
-		}
-		if dbColumnName == "period_" {
-			resQuery += fmt.Sprintf(`]::varchar[] <@ %s`, dbColumnName)
-		}
-		if dbColumnName == "term" {
-			resQuery += fmt.Sprintf(`]::int[] <@ %s`, dbColumnName)
-		}
-	}
-	return resQuery, placeholderCount, selectArgs
+type FacetPostgresql struct {
+	Term      int `db:"term"`
+	TermCount int `db:"term_count"`
 }
 
-// buildSearchCourseQuery からの切り分け
-// TODO : 汎用的にしたい、str の配列などで
-// TODO : create test
-func connectEachSimpleQuery(queryLists []string, filterType string) string {
-	resStr := ""
-	for _, query := range queryLists {
-		if query != "" {
-			if resStr != "" {
-				resStr += filterType
-			}
-			resStr += "(" + query + ")"
-		}
-	}
-	return "(" + resStr + ")"
+type coursePersistence struct {
+	db *sqlx.DB
 }
 
-// validateSearchCourseOptions() の返り値の searchCourseOptions を元に DB へ投げるクエリ文字列とそれら引数を作成する
-func buildSearchCourseQuery(options CourseQuery) (string, []interface{}, error) {
+func NewCoursePersistence(db *sqlx.DB) domain.CourseRepository {
+	return &coursePersistence{
+		db: db,
+	}
+}
+
+func (p *coursePersistence) Search(query domain.CourseQuery) ([]*domain.Course, error) {
+	queryStr, queryArgs, err := buildSearchCourseQuery(query)
+	if err != nil {
+		return nil, err
+	}
+
+	// とりあえず具体的な PostgreSQL と指定
+	// TODO: これはもっと抽象にするべき？調査
+	coursesDb, err := p.selectPostgresql(queryStr, queryArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	var courses []*domain.Course
+	for _, courseDb := range coursesDb {
+		course := courseDb.toCourse()
+		courses = append(courses, &course)
+	}
+
+	return courses, nil
+}
+
+func (p *coursePersistence) Facet(query domain.CourseQuery) ([]*domain.Facet, error) {
+	queryStr, queryArgs, err := buildGetFacetQuery(query)
+	if err != nil {
+		return nil, err
+	}
+
+	// とりあえず具体的な PostgreSQL と指定
+	// TODO: これはもっと抽象にするべき？調査
+	facetsDb, err := p.selectPostgresqlFacet(queryStr, queryArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	// 無駄な気がする
+	var facets []*domain.Facet
+	for _, facetDb := range facetsDb {
+		facet := &domain.Facet{
+			Term:      facetDb.Term,
+			TermCount: facetDb.TermCount,
+		}
+		facets = append(facets, facet)
+	}
+
+	return facets, nil
+}
+
+// PostgreSQL へ SELECT を実行する
+func (p *coursePersistence) selectPostgresql(query string, args []interface{}) ([]*CoursesPostgresql, error) {
+	var result []*CoursesPostgresql
+	err := p.db.Select(&result, query, args...)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return result, nil
+}
+
+// selectPostgresql とひとまとめにしたい
+func (p *coursePersistence) selectPostgresqlFacet(query string, args []interface{}) ([]*FacetPostgresql, error) {
+	var result []*FacetPostgresql
+	err := p.db.Select(&result, query, args...)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return result, nil
+}
+
+// domain.Course に変換
+// pq パッケージに依存しているところを整形する
+func (c *CoursesPostgresql) toCourse() domain.Course {
+	var term []int
+	for _, i := range c.Term {
+		term = append(term, int(i))
+	}
+
+	course := domain.Course{
+		ID:                       c.ID,
+		CourseNumber:             c.CourseNumber,
+		CourseName:               c.CourseName,
+		InstructionalType:        c.InstructionalType,
+		Credits:                  c.Credits,
+		StandardRegistrationYear: c.StandardRegistrationYear,
+		Term:                     term,
+		Period:                   c.Period,
+		Classroom:                c.Classroom,
+		Instructor:               c.Instructor,
+		CourseOverview:           c.CourseOverview,
+		Remarks:                  c.Remarks,
+		CreditedAuditors:         c.CreditedAuditors,
+		ApplicationConditions:    c.ApplicationConditions,
+		AltCourseName:            c.AltCourseName,
+		CourseCode:               c.CourseCode,
+		CourseCodeName:           c.CourseCodeName,
+		CSVUpdatedAt:             c.CSVUpdatedAt,
+		Year:                     c.Year,
+		CreatedAt:                c.CreatedAt,
+		UpdatedAt:                c.UpdatedAt,
+	}
+	return course
+}
+
+func buildSearchCourseQuery(options domain.CourseQuery) (string, []interface{}, error) {
 	// それぞれのカラムに対してカラム内検索の AND/OR が指定されている場合はそれで構築を行なう
 	// それぞれのカラムに対して検索文字列を構築したらそれぞれの間を FilterType で埋める
 	// 全体に対して offset, limit を指定する
@@ -148,8 +217,69 @@ func buildSearchCourseQuery(options CourseQuery) (string, []interface{}, error) 
 	return queryHead + queryWhere + queryOrderBy + queryLimit + queryOffset, selectArgs, nil
 }
 
-// validateSearchCourseOptions() の返り値の searchCourseOptions を元に DB へ投げるクエリ文字列とそれら引数を作成する
-func buildGetFacetQuery(options CourseQuery) (string, []interface{}, error) {
+func buildSimpleQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}) {
+	separatedStrList := util.SplitSpace(rawStr)
+	resQuery := ""
+	for count, separseparatedStr := range separatedStrList {
+		if count == 0 {
+			resQuery += fmt.Sprintf(`%s like $%d `, dbColumnName, placeholderCount)
+		} else {
+			resQuery += fmt.Sprintf(`%s %s like $%d `, filterType, dbColumnName, placeholderCount)
+		}
+		placeholderCount++
+		// 現時点では、キーワードを含むものを検索
+		selectArgs = append(selectArgs, "%"+separseparatedStr+"%")
+	}
+	return resQuery, placeholderCount, selectArgs
+}
+
+func connectEachSimpleQuery(queryLists []string, filterType string) string {
+	resStr := ""
+	for _, query := range queryLists {
+		if query != "" {
+			if resStr != "" {
+				resStr += filterType
+			}
+			resStr += "(" + query + ")"
+		}
+	}
+	return "(" + resStr + ")"
+}
+
+func buildArrayQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}) {
+	var separatedStrList []string
+	if dbColumnName == "period_" {
+		separatedStrList, _ = periodParser(rawStr)
+	}
+	if dbColumnName == "term" {
+		term := termParser(rawStr)
+		separatedStrList, _ = termStrToInt(term)
+	}
+	resQuery := ""
+	if len(separatedStrList) != 0 {
+		resQuery += "array["
+		for count, separseparatedStr := range separatedStrList {
+			if count == 0 {
+				resQuery += fmt.Sprintf(`$%d`, placeholderCount)
+			} else {
+				resQuery += fmt.Sprintf(`, $%d`, placeholderCount)
+			}
+			placeholderCount++
+			// 現時点では、キーワードを含むものを検索
+			selectArgs = append(selectArgs, separseparatedStr)
+		}
+		if dbColumnName == "period_" {
+			resQuery += fmt.Sprintf(`]::varchar[] <@ %s`, dbColumnName)
+		}
+		if dbColumnName == "term" {
+			resQuery += fmt.Sprintf(`]::int[] <@ %s`, dbColumnName)
+		}
+	}
+	return resQuery, placeholderCount, selectArgs
+}
+
+// TODO: buildSearchCourseQuery とほぼ同じなところを抜き出す
+func buildGetFacetQuery(options domain.CourseQuery) (string, []interface{}, error) {
 	// それぞれのカラムに対してカラム内検索の AND/OR が指定されている場合はそれで構築を行なう
 	// それぞれのカラムに対して検索文字列を構築したらそれぞれの間を FilterType で埋める
 	// 全体に対して offset, limit を指定する
@@ -194,71 +324,8 @@ func buildGetFacetQuery(options CourseQuery) (string, []interface{}, error) {
 	return `select term, count(term) as term_count from(` + queryHead + queryWhere + `) as s1 group by term`, selectArgs, nil
 }
 
-func searchCourse(query string, args []interface{}) ([]CoursesDB, error) {
-	var result []CoursesDB
-	err := db.Select(&result, query, args...)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	return result, nil
-}
-
-func getFacet(query string, args []interface{}) ([]FacetDB, error) {
-	var result []FacetDB
-	err := db.Select(&result, query, args...)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	return result, nil
-}
-
-func validateSearchCourseOptions(query CourseQuery) error {
-
-	allowedFilterType := []string{filterTypeAnd, filterTypeOr}
-	emptyQuery := true
-	if !util.Contains(allowedFilterType, query.FilterType) {
-		return fmt.Errorf("FilterType error: %s, %+v", query.FilterType, allowedFilterType)
-	}
-	if query.CourseNumber != "" {
-		emptyQuery = false
-	}
-	if query.CourseName != "" {
-		if !util.Contains(allowedFilterType, query.CourseNameFilterType) {
-			return fmt.Errorf("CourseNameFilterType error: %s, %+v", query.CourseNameFilterType, allowedFilterType)
-		}
-		emptyQuery = false
-	}
-	if query.CourseOverview != "" {
-		if !util.Contains(allowedFilterType, query.CourseOverviewFilterType) {
-			return fmt.Errorf("CourseOverviewFilterType error: %s, %+v", query.CourseOverviewFilterType, allowedFilterType)
-		}
-		emptyQuery = false
-	}
-	if query.Period != "" {
-		emptyQuery = false
-	}
-
-	if query.Term != "" {
-		emptyQuery = false
-	}
-
-	// どのカラムも検索対象としていなければ検索そのものが実行できないので、不正なリクエストである
-	if emptyQuery {
-		return errors.New("all parameter is empty")
-	}
-
-	if query.Limit < 0 {
-		return errors.New("limit is negative")
-	}
-
-	if query.Offset < 0 {
-		return errors.New("offset is negative")
-	}
-
-	return nil
-}
-
-// csv2sql からのコピペいい感じにモジュールとして入れたい
+// === csv2sql から ===
+// TODO: csv2sql からのコピペいい感じにモジュールとして入れたい
 func periodParser(periodString string) ([]string, error) {
 	period := []string{}
 	periodString = strings.Replace(periodString, " ", "", -1)
@@ -405,3 +472,5 @@ func termParser(termString string) []string {
 	}
 	return res
 }
+
+// ==========
