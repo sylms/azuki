@@ -38,7 +38,10 @@ func CreateDB() (*sqlx.DB, error) {
 	}
 
 	const waitMaxSeconds = 120
-	resource.Expire(waitMaxSeconds)
+	err = resource.Expire(waitMaxSeconds)
+	if err != nil {
+		return nil, err
+	}
 
 	hostAndPort := resource.GetHostPort("5432/tcp")
 	databaseUrl := fmt.Sprintf("postgres://sylms:sylms@%s/courses?sslmode=disable", hostAndPort)
