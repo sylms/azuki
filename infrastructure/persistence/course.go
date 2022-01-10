@@ -255,7 +255,6 @@ func buildArrayQuery(rawStr string, filterType string, dbColumnName string, sele
 				resQuery += fmt.Sprintf(`, $%d`, placeholderCount)
 			}
 			placeholderCount++
-			// 現時点では、キーワードを含むものを検索
 			selectArgs = append(selectArgs, separseparatedStr)
 		}
 		if dbColumnName == "period_" {
