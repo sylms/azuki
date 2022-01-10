@@ -2,7 +2,6 @@ package testutils
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -34,7 +33,7 @@ func CreateDB() (*sqlx.DB, error) {
 
 	resource, err := pool.RunWithOptions(runOptions)
 	if err != nil {
-		log.Fatalf("Could not start resource: %s", err)
+		return nil, fmt.Errorf("could not start resource: %s", err)
 	}
 
 	const waitMaxSeconds = 120
