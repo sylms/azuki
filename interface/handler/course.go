@@ -13,6 +13,7 @@ import (
 	"github.com/sylms/azuki/domain"
 	"github.com/sylms/azuki/usecase"
 	"github.com/sylms/azuki/util"
+	"github.com/sylms/csv2sql/kdb"
 )
 
 type CourseHandler interface {
@@ -143,6 +144,22 @@ func validateSearchCourseQuery(query domain.CourseQuery) error {
 	if query.CourseOverview != "" {
 		if !util.Contains(allowedFilterType, query.CourseOverviewFilterType) {
 			return fmt.Errorf("CourseOverviewFilterType error: %s, %+v", query.CourseOverviewFilterType, allowedFilterType)
+		}
+	}
+
+	if query.Period != "" {
+		_, err := kdb.PeriodParser(query.Period)
+		if err != nil {
+			return fmt.Errorf("'period' parse error: %+v", err)
+		}
+	}
+
+	if query.Term != "" {
+		terms := kdb.TermParser(query.Term)
+		if len(terms) == 0 {
+			// Term に何か与えられているもののパースした結果どの開講時期でも無いので与えられた文字列がおかしい
+			// "春Aははは" みたいな、きちんとした開講時期とおかしな文字列の両方が含まれる場合については、とりあえず考えないこととする
+			return fmt.Errorf("'term' parse error")
 		}
 	}
 

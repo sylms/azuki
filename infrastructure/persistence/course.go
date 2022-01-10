@@ -235,12 +235,10 @@ func connectEachSimpleQuery(queryLists []string, filterType string) string {
 func buildArrayQuery(rawStr string, filterType string, dbColumnName string, selectArgs []interface{}, placeholderCount int) (string, int, []interface{}) {
 	var separatedStrList []string
 	if dbColumnName == "period_" {
-		// TODO: エラーハンドリング
 		separatedStrList, _ = kdb.PeriodParser(rawStr)
 	}
 	if dbColumnName == "term" {
 		term := kdb.TermParser(rawStr)
-		// TODO: エラーハンドリング
 		// TODO: kdb.TermStrInt が slice で受け取るためアドホックな対応をしてしまっているのできれいにする
 		termsInt, _ := kdb.TermStrToInt(term)
 		for _, termInt := range termsInt {
