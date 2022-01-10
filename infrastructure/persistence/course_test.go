@@ -468,3 +468,71 @@ func Test_coursePersistence_Search(t *testing.T) {
 		})
 	}
 }
+
+func Test_coursePersistence_Facet(t *testing.T) {
+	db, err := testutils.CreateDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type args struct {
+		query domain.CourseQuery
+	}
+	tests := []struct {
+		name    string
+		fields  coursePersistence
+		args    args
+		want    []*domain.Facet
+		wantErr bool
+	}{
+		{
+			name: "temp",
+			fields: coursePersistence{
+				db: db,
+			},
+			args: args{
+				query: domain.CourseQuery{
+					CourseName:           "情報",
+					CourseNameFilterType: "and",
+					Limit:                50,
+				},
+			},
+			want: []*domain.Facet{
+				{
+					Term:      1,
+					TermCount: 1,
+				},
+				{
+					Term:      5,
+					TermCount: 2,
+				},
+				{
+					Term:      2,
+					TermCount: 2,
+				},
+				{
+					Term:      4,
+					TermCount: 1,
+				},
+				{
+					Term:      3,
+					TermCount: 1,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := tt.fields
+			got, err := p.Facet(tt.args.query)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("coursePersistence.Facet() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := cmp.Diff(got, tt.want); diff != "" {
+				t.Errorf("coursePersistence.Facet() mismatch: (-got +want)\n%s", diff)
+			}
+		})
+	}
+}
