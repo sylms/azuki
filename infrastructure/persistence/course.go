@@ -213,7 +213,11 @@ func buildSearchCourseQuery(options domain.CourseQuery) (string, []interface{}, 
 	queryOffset := fmt.Sprintf(`offset $%d`, placeholderCount)
 	selectArgs = append(selectArgs, strconv.Itoa(options.Offset))
 
-	const queryHead = `select * from courses where `
+	const queryHead = `select * from courses `
+	queryWhere = "where " + queryWhere
+	if queryWhere == "where ()" {
+		queryWhere = ""
+	}
 	return queryHead + queryWhere + queryOrderBy + queryLimit + queryOffset, selectArgs, nil
 }
 
@@ -269,10 +273,10 @@ func buildArrayQuery(rawStr string, filterType string, dbColumnName string, sele
 			selectArgs = append(selectArgs, separseparatedStr)
 		}
 		if dbColumnName == "period_" {
-			resQuery += fmt.Sprintf(`]::varchar[] <@ %s`, dbColumnName)
+			resQuery += fmt.Sprintf(`]::varchar[] @> %s and array[]::varchar[] <> %s`, dbColumnName, dbColumnName)
 		}
 		if dbColumnName == "term" {
-			resQuery += fmt.Sprintf(`]::int[] <@ %s`, dbColumnName)
+			resQuery += fmt.Sprintf(`]::int[] @> %s and array[]::int[] <> %s`, dbColumnName, dbColumnName)
 		}
 	}
 	return resQuery, placeholderCount, selectArgs
@@ -308,19 +312,11 @@ func buildGetFacetQuery(options domain.CourseQuery) (string, []interface{}, erro
 	// カラムごとに生成されたクエリを接続
 	queryWhere := connectEachSimpleQuery(queryLists, options.FilterType)
 
-	// order by
-	// const queryOrderBy = "order by id asc "
-
-	// limit 部分を構築
-	// queryLimit := fmt.Sprintf(`limit $%d `, placeholderCount)
-	// placeholderCount++
-	// selectArgs = append(selectArgs, strconv.Itoa(options.Limit))
-
-	// offset 部分を構築
-	// queryOffset := fmt.Sprintf(`offset $%d`, placeholderCount)
-	// selectArgs = append(selectArgs, strconv.Itoa(options.Offset))
-
-	const queryHead = `select unnest(term) as term from courses where `
+	const queryHead = `select unnest(term) as term from courses `
+	queryWhere = "where " + queryWhere
+	if queryWhere == "where ()" {
+		queryWhere = ""
+	}
 	return `select term, count(term) as term_count from(` + queryHead + queryWhere + `) as s1 group by term`, selectArgs, nil
 }
 
