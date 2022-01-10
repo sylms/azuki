@@ -132,36 +132,18 @@ func (h *courseHandler) Search(w http.ResponseWriter, r *http.Request) {
 // TODO: これは interface or usecase ？
 func validateSearchCourseQuery(query domain.CourseQuery) error {
 	allowedFilterType := []string{"and", "or"}
-	emptyQuery := true
 	if !util.Contains(allowedFilterType, query.FilterType) {
 		return fmt.Errorf("FilterType error: %s, %+v", query.FilterType, allowedFilterType)
-	}
-	if query.CourseNumber != "" {
-		emptyQuery = false
 	}
 	if query.CourseName != "" {
 		if !util.Contains(allowedFilterType, query.CourseNameFilterType) {
 			return fmt.Errorf("CourseNameFilterType error: %s, %+v", query.CourseNameFilterType, allowedFilterType)
 		}
-		emptyQuery = false
 	}
 	if query.CourseOverview != "" {
 		if !util.Contains(allowedFilterType, query.CourseOverviewFilterType) {
 			return fmt.Errorf("CourseOverviewFilterType error: %s, %+v", query.CourseOverviewFilterType, allowedFilterType)
 		}
-		emptyQuery = false
-	}
-	if query.Period != "" {
-		emptyQuery = false
-	}
-
-	if query.Term != "" {
-		emptyQuery = false
-	}
-
-	// どのカラムも検索対象としていなければ検索そのものが実行できないので、不正なリクエストである
-	if emptyQuery {
-		return errors.New("all parameter is empty")
 	}
 
 	if query.Limit < 0 {
