@@ -13,6 +13,7 @@ type courseUseCaseMock struct {
 	domain.Course
 	FakeSearch func(domain.CourseQuery) ([]*domain.Course, error)
 	FakeFacet  func(domain.CourseQuery) ([]*domain.Facet, error)
+	FakeUpdate func(domain.UpdateJSON) error
 }
 
 func (uc *courseUseCaseMock) Search(query domain.CourseQuery) ([]*domain.Course, error) {
@@ -21,6 +22,10 @@ func (uc *courseUseCaseMock) Search(query domain.CourseQuery) ([]*domain.Course,
 
 func (uc *courseUseCaseMock) Facet(query domain.CourseQuery) ([]*domain.Facet, error) {
 	return uc.FakeFacet(query)
+}
+
+func (uc *courseUseCaseMock) Update(query domain.UpdateJSON) error {
+	return uc.FakeUpdate(query)
 }
 
 func Test_courseHandler_Search(t *testing.T) {
