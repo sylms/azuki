@@ -88,14 +88,10 @@ func (p *coursePersistence) Facet(query domain.CourseQuery) ([]*domain.Facet, er
 		return nil, err
 	}
 
-	// 無駄な気がする
 	var facets []*domain.Facet
 	for _, row := range selectResultRows {
-		facet := &domain.Facet{
-			Term:      row.Term,
-			TermCount: row.TermCount,
-		}
-		facets = append(facets, facet)
+		facet := domain.Facet(*row)
+		facets = append(facets, &facet)
 	}
 
 	return facets, nil
