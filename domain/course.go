@@ -51,6 +51,30 @@ type CourseQuery struct {
 	Offset int `json:"offset"`
 }
 
+type UpdateJSON struct {
+	ID                       int      `json:"id"`
+	CourseNumber             string   `json:"course_number"`
+	CourseName               string   `json:"course_name"`
+	InstructionalType        int      `json:"instructional_type"`
+	Credits                  string   `json:"credits"`
+	StandardRegistrationYear []string `json:"standard_registration_year"`
+	Term                     []int    `json:"term"`
+	Period                   []string `json:"period"`
+	Classroom                string   `json:"classroom"`
+	Instructor               []string `json:"instructor"`
+	CourseOverview           string   `json:"course_overview"`
+	Remarks                  string   `json:"remarks"`
+	CreditedAuditors         int      `json:"credited_auditors"`
+	ApplicationConditions    string   `json:"application_conditions"`
+	AltCourseName            string   `json:"alt_course_name"`
+	CourseCode               string   `json:"course_code"`
+	CourseCodeName           string   `json:"course_code_name"`
+	// CSVUpdatedAt             time.Time `json:"csv_updated_at"`
+	Year int `json:"year"`
+	// CreatedAt                time.Time `json:"created_at"`
+	// UpdatedAt                time.Time `json:"updated_at"`
+}
+
 type Facet struct {
 	Term      int
 	TermCount int
@@ -59,4 +83,5 @@ type Facet struct {
 type CourseRepository interface {
 	Search(CourseQuery) ([]*Course, error)
 	Facet(CourseQuery) ([]*Facet, error)
+	Update(UpdateJSON) error
 }

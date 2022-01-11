@@ -21,6 +21,7 @@ const (
 	envSylmsPostgresHostKey     = "SYLMS_POSTGRES_HOST"
 	envSylmsPostgresPortKey     = "SYLMS_POSTGRES_PORT"
 	envSylmsPort                = "SYLMS_PORT"
+	envSecretKey                = "SECRET_KEY"
 )
 
 func main() {
@@ -52,6 +53,7 @@ func main() {
 	r.HandleFunc("/course", handler.Search).Methods("POST")
 	r.HandleFunc("/facet", handler.Facet).Methods("POST")
 	r.HandleFunc("/csv", handler.Csv).Methods("POST")
+	r.HandleFunc("/update", handler.Update).Methods("POST")
 	c := cors.Default().Handler(r)
 	log.Printf("Listen Port: %s", portStr)
 	err = http.ListenAndServe(fmt.Sprintf(":%s", portStr), c)

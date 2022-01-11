@@ -15,6 +15,7 @@ require (
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/ory/dockertest/v3 v3.8.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pquerna/otp v1.3.0 // indirect
 	github.com/rs/cors v1.8.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/sylms/csv2sql v0.0.0-20220111103726-a9f2cb0b2fa7 // indirect

@@ -97,6 +97,19 @@ func (p *coursePersistence) Facet(query domain.CourseQuery) ([]*domain.Facet, er
 	return facets, nil
 }
 
+func (p *coursePersistence) Update(query domain.UpdateJSON) error {
+	queryStr, queryArgs, err := buildUpdateQuery(query)
+	if err != nil {
+		return err
+	}
+	_, err = p.db.Exec(queryStr, queryArgs...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // domain.Course に変換
 // pq パッケージに依存しているところを整形する
 func (c *CoursesPostgresql) toCourse() domain.Course {
@@ -283,4 +296,69 @@ func buildGetFacetQuery(options domain.CourseQuery) (string, []interface{}, erro
 		queryWhere = ""
 	}
 	return `select term, count(term) as term_count from(` + queryHead + queryWhere + `) as s1 group by term`, selectArgs, nil
+}
+
+// TODO: buildSearchCourseQuery とほぼ同じなところを抜き出す
+func buildUpdateQuery(options domain.UpdateJSON) (string, []interface{}, error) {
+	// update courses SET standard_registration_year = array['1','2','3','4','5']::standard_registration_year[]
+	// where id = 1;
+
+	// update courses SET period_ = array[1,2,3,4,5] where id = 1;
+	// PostgreSQL へ渡す $1, $2 プレースホルダーのインクリメントのカウンタ
+	selectArgs := []interface{}{}
+	placeholderCount := 1
+	queryHead := "update courses SET "
+
+	queryBody := ""
+
+	{
+		queryBody += fmt.Sprintf(`course_number = $%d,`, placeholderCount)
+		placeholderCount++
+		selectArgs = append(selectArgs, options.CourseNumber)
+	}
+	{
+		queryBody += fmt.Sprintf(`course_name = $%d,`, placeholderCount)
+		placeholderCount++
+		selectArgs = append(selectArgs, options.CourseName)
+	}
+	{
+		queryBody += fmt.Sprintf(`credits = $%d,`, placeholderCount)
+		placeholderCount++
+		selectArgs = append(selectArgs, options.Credits)
+	}
+	{
+		queryBody += fmt.Sprintf(`course_overview = $%d,`, placeholderCount)
+		placeholderCount++
+		selectArgs = append(selectArgs, options.CourseOverview)
+	}
+	{
+		queryBody += fmt.Sprintf(`classroom = $%d,`, placeholderCount)
+		placeholderCount++
+		selectArgs = append(selectArgs, options.Classroom)
+	}
+	{
+		queryBody += fmt.Sprintf(`id = $%d,`, placeholderCount)
+		placeholderCount++
+		selectArgs = append(selectArgs, options.ID)
+	}
+	{
+		queryBody += fmt.Sprintf(`instructional_type = $%d,`, placeholderCount)
+		placeholderCount++
+		selectArgs = append(selectArgs, options.InstructionalType)
+	}
+	{
+		queryBody += fmt.Sprintf(`credited_auditors = $%d,`, placeholderCount)
+		placeholderCount++
+		selectArgs = append(selectArgs, options.CreditedAuditors)
+	}
+	{
+		queryBody += fmt.Sprintf(`year = $%d `, placeholderCount)
+		placeholderCount++
+		selectArgs = append(selectArgs, options.Year)
+	}
+
+	queryTail := "where id = " + fmt.Sprintf(`$%d`, placeholderCount)
+	selectArgs = append(selectArgs, options.ID)
+	// PostgreSQL へ渡す select 文のプレースホルダーに割り当てる変数を格納
+	return queryHead + queryBody + queryTail, selectArgs, nil
 }

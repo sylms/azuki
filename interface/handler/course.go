@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/gocarina/gocsv"
+	"github.com/pquerna/otp/totp"
 	"github.com/sylms/azuki/domain"
 	"github.com/sylms/azuki/usecase"
 	"github.com/sylms/azuki/util"
@@ -20,6 +22,7 @@ type CourseHandler interface {
 	Search(http.ResponseWriter, *http.Request)
 	Csv(http.ResponseWriter, *http.Request)
 	Facet(http.ResponseWriter, *http.Request)
+	Update(http.ResponseWriter, *http.Request)
 }
 
 type courseHandler struct {
@@ -331,5 +334,47 @@ func (h *courseHandler) Facet(w http.ResponseWriter, r *http.Request) {
 	_, err = w.Write(j)
 	if err != nil {
 		log.Printf("%+v", err)
+	}
+}
+
+func (h *courseHandler) Update(w http.ResponseWriter, r *http.Request) {
+	secretKey := os.Getenv("SECRET_KEY")
+	code, _ := totp.GenerateCode(secretKey, time.Now())
+
+	//Validate request
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	q := r.URL.Query()
+	apiKey := q.Get("apikey")
+
+	if apiKey != code {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	} else {
+
+		if r.Header.Get("Content-Type") != "application/json" {
+			w.WriteHeader(http.StatusUnsupportedMediaType)
+			return
+		}
+
+		//parse json
+		var query domain.UpdateJSON
+		err := json.NewDecoder(r.Body).Decode(&query)
+		if err != nil {
+			log.Printf("%+v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		err = h.uc.Update(query)
+		if err != nil {
+			log.Printf("%+v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
 	}
 }
