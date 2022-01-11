@@ -17,7 +17,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/cors v1.8.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
-	github.com/sylms/csv2sql v0.0.0-20220108144520-8933caa64a95 // indirect
+	github.com/sylms/csv2sql v0.0.0-20220111103726-a9f2cb0b2fa7 // indirect
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
 	gopkg.in/guregu/null.v3 v3.5.0 // indirect

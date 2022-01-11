@@ -238,9 +238,12 @@ func buildArrayQuery(rawStr string, filterType string, dbColumnName string, sele
 		separatedStrList, _ = kdb.PeriodParser(rawStr)
 	}
 	if dbColumnName == "term" {
-		term := kdb.TermParser(rawStr)
-		// TODO: kdb.TermStrInt が slice で受け取るためアドホックな対応をしてしまっているのできれいにする
-		termsInt, _ := kdb.TermStrToInt(term)
+		terms := kdb.TermParser(rawStr)
+		termsInt := []int{}
+		for _, term := range terms {
+			termInt, _ := kdb.TermStrToInt(term)
+			termsInt = append(termsInt, termInt)
+		}
 		for _, termInt := range termsInt {
 			separatedStrList = append(separatedStrList, strconv.Itoa(termInt))
 		}
