@@ -225,26 +225,6 @@ func Test_validateSearchCourseQuery(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := validateSearchCourseQuery(tt.args.query); (err != nil) != tt.wantErr {
-				t.Errorf("validateSearchCourseQuery() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_validateSearchCourseOptions(t *testing.T) {
-	type args struct {
-		query domain.CourseQuery
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
 		{
 			name: "exist all parameter",
 			args: args{
@@ -460,7 +440,7 @@ func Test_validateSearchCourseOptions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validateSearchCourseQuery(tt.args.query)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("validateSearchCourseOptions() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("validateSearchCourseQuery() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 		})
