@@ -7,7 +7,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	"github.com/pkg/errors"
 	"github.com/sylms/azuki/domain"
 	"github.com/sylms/azuki/util"
 	"github.com/sylms/csv2sql/kdb"
@@ -60,14 +59,15 @@ func (p *coursePersistence) Search(query domain.CourseQuery) ([]*domain.Course, 
 
 	// とりあえず具体的な PostgreSQL と指定
 	// TODO: これはもっと抽象にするべき？調査
-	coursesDb, err := p.selectPostgresql(queryStr, queryArgs)
+	var selectResultRows []*CoursesPostgresql
+	err = p.db.Select(&selectResultRows, queryStr, queryArgs...)
 	if err != nil {
 		return nil, err
 	}
 
 	var courses []*domain.Course
-	for _, courseDb := range coursesDb {
-		course := courseDb.toCourse()
+	for _, row := range selectResultRows {
+		course := row.toCourse()
 		courses = append(courses, &course)
 	}
 
@@ -82,42 +82,19 @@ func (p *coursePersistence) Facet(query domain.CourseQuery) ([]*domain.Facet, er
 
 	// とりあえず具体的な PostgreSQL と指定
 	// TODO: これはもっと抽象にするべき？調査
-	facetsDb, err := p.selectPostgresqlFacet(queryStr, queryArgs)
+	var selectResultRows []*FacetPostgresql
+	err = p.db.Select(&selectResultRows, queryStr, queryArgs...)
 	if err != nil {
 		return nil, err
 	}
 
-	// 無駄な気がする
 	var facets []*domain.Facet
-	for _, facetDb := range facetsDb {
-		facet := &domain.Facet{
-			Term:      facetDb.Term,
-			TermCount: facetDb.TermCount,
-		}
-		facets = append(facets, facet)
+	for _, row := range selectResultRows {
+		facet := domain.Facet(*row)
+		facets = append(facets, &facet)
 	}
 
 	return facets, nil
-}
-
-// PostgreSQL へ SELECT を実行する
-func (p *coursePersistence) selectPostgresql(query string, args []interface{}) ([]*CoursesPostgresql, error) {
-	var result []*CoursesPostgresql
-	err := p.db.Select(&result, query, args...)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	return result, nil
-}
-
-// selectPostgresql とひとまとめにしたい
-func (p *coursePersistence) selectPostgresqlFacet(query string, args []interface{}) ([]*FacetPostgresql, error) {
-	var result []*FacetPostgresql
-	err := p.db.Select(&result, query, args...)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	return result, nil
 }
 
 // domain.Course に変換
