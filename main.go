@@ -25,7 +25,7 @@ const (
 )
 
 func main() {
-	envKeys := []string{envSylmsPostgresDBKey, envSylmsPostgresUserKey, envSylmsPostgresPasswordKey, envSylmsPostgresHostKey, envSylmsPostgresPortKey, envSylmsPort}
+	envKeys := []string{envSylmsPostgresDBKey, envSylmsPostgresUserKey, envSylmsPostgresPasswordKey, envSylmsPostgresHostKey, envSylmsPostgresPortKey, envSylmsPort, envSecretKey}
 	for _, key := range envKeys {
 		val, ok := os.LookupEnv(key)
 		if !ok || val == "" {
@@ -47,7 +47,7 @@ func main() {
 
 	persistence := persistence.NewCoursePersistence(db)
 	useCase := usecase.NewCourseUseCase(persistence)
-	handler := handler.NewCourseHandler(useCase)
+	handler := handler.NewCourseHandler(useCase, os.Getenv(envSecretKey))
 
 	r := mux.NewRouter()
 	r.HandleFunc("/course", handler.Search).Methods("POST")

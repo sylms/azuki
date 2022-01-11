@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -26,12 +25,17 @@ type CourseHandler interface {
 }
 
 type courseHandler struct {
-	uc usecase.CourseUseCase
+	uc           usecase.CourseUseCase
+	otpSecretKey string
 }
 
-func NewCourseHandler(uc usecase.CourseUseCase) CourseHandler {
+func NewCourseHandler(
+	uc usecase.CourseUseCase,
+	otpSecretKey string,
+) CourseHandler {
 	return &courseHandler{
-		uc: uc,
+		uc:           uc,
+		otpSecretKey: otpSecretKey,
 	}
 }
 
@@ -339,8 +343,12 @@ func (h *courseHandler) Facet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *courseHandler) Update(w http.ResponseWriter, r *http.Request) {
-	secretKey := os.Getenv("SECRET_KEY")
-	code, _ := totp.GenerateCode(secretKey, time.Now())
+	code, err := totp.GenerateCode(h.otpSecretKey, time.Now())
+	if err != nil {
+		log.Printf("%+v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	//Validate request
 	if r.Method != "POST" {
