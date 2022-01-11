@@ -213,15 +213,16 @@ func Test_coursePersistence_Search(t *testing.T) {
 			},
 			args: args{
 				query: domain.CourseQuery{
-					// TODO: 検索需要わからなくなった確認する
-					// csv2sql/kdb で "春A" と "春B" と "春C" に分割される
+					// csv2sql/kdb で "春A" と "春B" に分割される
 					// クエリの開講時期のすべてが含まれている科目を検索する
+					// 春A春B or 春A or 春B を開講時期として設定している科目
 					// -> 余裕のある開講時期をいくつか指定して科目を検索したい需要
 					Term:  "春A春B",
 					Limit: 50,
 				},
 			},
 			want: []*domain.Course{
+				// TODO: 春A のみ開講の科目なども用意しておく
 				{
 					ID:                       18022,
 					CourseNumber:             "GA15111",
