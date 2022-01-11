@@ -24,37 +24,21 @@ func (uc *courseUseCaseMock) Facet(query domain.CourseQuery) ([]*domain.Facet, e
 }
 
 func Test_courseHandler_Search(t *testing.T) {
-	t.Run("temp", func(t *testing.T) {
-		want := `[{"id":18010,"course_number":"GA10101","course_name":"情報社会と法制度","instructional_type":1,"credits":"2.0","standard_registration_year":["2"],"term":[4,5],"period":["月5","月6"],"classroom":"","instructor":["髙良 幸哉"],"course_overview":"情報化社会における法制度や情報モラル向上に必要な基礎知識を習得することを目指すため、現行の我が国の法制度の基礎を学び、ネットワーク社会における法整備の現状について講義する。","remarks":"オンライン(オンデマンド型)","credited_auditors":0,"application_conditions":"正規生に対しても受講制限をしているため","alt_course_name":"Information Society Law","course_code":"GA10101","course_code_name":"情報社会と法制度","csv_updated_at":"0001-01-01T00:00:00Z","year":2021,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z"}]`
-		reqBody := `{
-		    "course_number": "GA10101",
-		    "course_name": "情報社会と法制度",
-		    "instructional_type": -1,
-		    "credits": "",
-		    "standard_registration_year": -1,
-		    "term": "",
-		    "period": "",
-		    "classroom": "",
-		    "instructor": "",
-		    "course_overview": "",
-		    "remarks": "",
-		    "course_name_filter_type": "and",
-		    "course_overview_filter_type": "and",
-		    "filter_type": "and",
-		    "limit": 20,
-		    "offset": 0
-		}`
-		req, err := http.NewRequest(http.MethodPost, "/courses", bytes.NewBufferString(reqBody))
-		if err != nil {
-			t.Fatal(err)
-		}
-		req.Header.Set("Content-Type", "application/json")
-
-		res := httptest.NewRecorder()
-
-		h := &courseHandler{
-			uc: &courseUseCaseMock{
-				FakeSearch: func(cq domain.CourseQuery) ([]*domain.Course, error) {
+	type fakeSearch struct {
+		Search func(domain.CourseQuery) ([]*domain.Course, error)
+	}
+	tests := []struct {
+		name                 string
+		fakeSearch           fakeSearch
+		reqContentTypeHeader string
+		reqBody              string
+		wantResStatusCode    int
+		wantResBody          string
+	}{
+		{
+			name: "normal",
+			fakeSearch: fakeSearch{
+				Search: func(cq domain.CourseQuery) ([]*domain.Course, error) {
 					courses := []*domain.Course{
 						{
 							ID:                       18010,
@@ -80,51 +64,77 @@ func Test_courseHandler_Search(t *testing.T) {
 					return courses, nil
 				},
 			},
-		}
-		h.Search(res, req)
+			reqContentTypeHeader: "application/json",
+			reqBody: `{
+		    "course_number": "GA10101",
+		    "course_name": "情報社会と法制度",
+		    "instructional_type": -1,
+		    "credits": "",
+		    "standard_registration_year": -1,
+		    "term": "",
+		    "period": "",
+		    "classroom": "",
+		    "instructor": "",
+		    "course_overview": "",
+		    "remarks": "",
+		    "course_name_filter_type": "and",
+		    "course_overview_filter_type": "and",
+		    "filter_type": "and",
+		    "limit": 20,
+		    "offset": 0
+		}`,
+			wantResStatusCode: http.StatusOK,
+			wantResBody:       `[{"id":18010,"course_number":"GA10101","course_name":"情報社会と法制度","instructional_type":1,"credits":"2.0","standard_registration_year":["2"],"term":[4,5],"period":["月5","月6"],"classroom":"","instructor":["髙良 幸哉"],"course_overview":"情報化社会における法制度や情報モラル向上に必要な基礎知識を習得することを目指すため、現行の我が国の法制度の基礎を学び、ネットワーク社会における法整備の現状について講義する。","remarks":"オンライン(オンデマンド型)","credited_auditors":0,"application_conditions":"正規生に対しても受講制限をしているため","alt_course_name":"Information Society Law","course_code":"GA10101","course_code_name":"情報社会と法制度","csv_updated_at":"0001-01-01T00:00:00Z","year":2021,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z"}]`,
+		},
+	}
 
-		got := res.Body.String()
-		if got != want {
-			t.Errorf("response mismatch:\ngot: %s\nwant: %s", got, want)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodPost, "/courses", bytes.NewBufferString(tt.reqBody))
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Header.Set("Content-Type", tt.reqContentTypeHeader)
+
+			res := httptest.NewRecorder()
+
+			h := &courseHandler{
+				uc: &courseUseCaseMock{
+					FakeSearch: tt.fakeSearch.Search,
+				},
+			}
+
+			h.Search(res, req)
+
+			resBodyGot := res.Body.String()
+			if resBodyGot != tt.wantResBody {
+				t.Errorf("response mismatch:\ngot: %s\nwant: %s", resBodyGot, tt.wantResBody)
+			}
+
+			statusCodeGot := res.Code
+			if statusCodeGot != tt.wantResStatusCode {
+				t.Errorf("response status code mismatch:\ngot: %d\nwant: %d", statusCodeGot, tt.wantResStatusCode)
+			}
+		})
+	}
 }
 
 func Test_courseHandler_Csv(t *testing.T) {
-	t.Run("temp", func(t *testing.T) {
-		want := `科目番号,科目名,授業方法,単位数,標準履修年次,実施学期,曜時限,教室,担当教員,授業概要,備考,科目等履修生申請可否,申請条件,英語(日本語)科目名,科目コード,要件科目名,データ更新日
-GA10101,情報社会と法制度,1,2.0,2,秋B秋C,"月5,月6",,髙良 幸哉,情報化社会における法制度や情報モラル向上に必要な基礎知識を習得することを目指すため、現行の我が国の法制度の基礎を学び、ネットワーク社会における法整備の現状について講義する。,オンライン(オンデマンド型),0,正規生に対しても受講制限をしているため,Information Society Law,GA10101,情報社会と法制度,0001-01-01T00:00:00Z
-`
-		reqBody := `{
-		    "course_number": "GA10101",
-		    "course_name": "情報社会と法制度",
-		    "instructional_type": -1,
-		    "credits": "",
-		    "standard_registration_year": -1,
-		    "term": "",
-		    "period": "",
-		    "classroom": "",
-		    "instructor": "",
-		    "course_overview": "",
-		    "remarks": "",
-		    "course_name_filter_type": "and",
-		    "course_overview_filter_type": "and",
-		    "filter_type": "and",
-		    "limit": 20,
-		    "offset": 0
-		}`
-
-		req, err := http.NewRequest(http.MethodPost, "/csv", bytes.NewBufferString(reqBody))
-		if err != nil {
-			t.Fatal(err)
-		}
-		req.Header.Set("Content-Type", "application/json")
-
-		res := httptest.NewRecorder()
-
-		h := &courseHandler{
-			uc: &courseUseCaseMock{
-				FakeSearch: func(cq domain.CourseQuery) ([]*domain.Course, error) {
+	type fakeSearch struct {
+		Search func(domain.CourseQuery) ([]*domain.Course, error)
+	}
+	tests := []struct {
+		name                 string
+		fakeSearch           fakeSearch
+		reqContentTypeHeader string
+		reqBody              string
+		wantResStatusCode    int
+		wantResBody          string
+	}{
+		{
+			name: "temp",
+			fakeSearch: fakeSearch{
+				Search: func(cq domain.CourseQuery) ([]*domain.Course, error) {
 					courses := []*domain.Course{
 						{
 							ID:                       18010,
@@ -150,14 +160,61 @@ GA10101,情報社会と法制度,1,2.0,2,秋B秋C,"月5,月6",,髙良 幸哉,情
 					return courses, nil
 				},
 			},
-		}
-		h.Csv(res, req)
+			reqContentTypeHeader: "application/json",
+			reqBody: `{
+		    "course_number": "GA10101",
+		    "course_name": "情報社会と法制度",
+		    "instructional_type": -1,
+		    "credits": "",
+		    "standard_registration_year": -1,
+		    "term": "",
+		    "period": "",
+		    "classroom": "",
+		    "instructor": "",
+		    "course_overview": "",
+		    "remarks": "",
+		    "course_name_filter_type": "and",
+		    "course_overview_filter_type": "and",
+		    "filter_type": "and",
+		    "limit": 20,
+		    "offset": 0
+		}`,
+			wantResStatusCode: http.StatusOK,
+			wantResBody: `科目番号,科目名,授業方法,単位数,標準履修年次,実施学期,曜時限,教室,担当教員,授業概要,備考,科目等履修生申請可否,申請条件,英語(日本語)科目名,科目コード,要件科目名,データ更新日
+GA10101,情報社会と法制度,1,2.0,2,秋B秋C,"月5,月6",,髙良 幸哉,情報化社会における法制度や情報モラル向上に必要な基礎知識を習得することを目指すため、現行の我が国の法制度の基礎を学び、ネットワーク社会における法整備の現状について講義する。,オンライン(オンデマンド型),0,正規生に対しても受講制限をしているため,Information Society Law,GA10101,情報社会と法制度,0001-01-01T00:00:00Z
+`,
+		},
+	}
 
-		got := res.Body.String()
-		if got != want {
-			t.Errorf("response mismatch:\ngot:\n%s\nwant:\n%s", got, want)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodPost, "/csv", bytes.NewBufferString(tt.reqBody))
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Header.Set("Content-Type", tt.reqContentTypeHeader)
+
+			res := httptest.NewRecorder()
+
+			h := &courseHandler{
+				uc: &courseUseCaseMock{
+					FakeSearch: tt.fakeSearch.Search,
+				},
+			}
+
+			h.Csv(res, req)
+
+			resBodyGot := res.Body.String()
+			if resBodyGot != tt.wantResBody {
+				t.Errorf("response mismatch:\ngot: %s\nwant: %s", resBodyGot, tt.wantResBody)
+			}
+
+			statusCodeGot := res.Code
+			if statusCodeGot != tt.wantResStatusCode {
+				t.Errorf("response status code mismatch:\ngot: %d\nwant: %d", statusCodeGot, tt.wantResStatusCode)
+			}
+		})
+	}
 }
 
 func Test_courseHandler_Facet(t *testing.T) {
