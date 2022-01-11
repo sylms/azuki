@@ -264,6 +264,7 @@ func (h *courseHandler) Csv(w http.ResponseWriter, r *http.Request) {
 
 // 開講時期を数値から文字列に変換
 func decodeTerm(index int) (string, error) {
+	index -= 1
 	terms := []string{
 		"春A",
 		"春B",
