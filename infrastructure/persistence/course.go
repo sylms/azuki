@@ -191,7 +191,11 @@ func buildSimpleQuery(rawStr string, filterType string, dbColumnName string, sel
 		}
 		placeholderCount++
 		// 現時点では、キーワードを含むものを検索
-		selectArgs = append(selectArgs, "%"+separseparatedStr+"%")
+		if dbColumnName == "course_number" {
+			selectArgs = append(selectArgs, separseparatedStr+"%")
+		} else {
+			selectArgs = append(selectArgs, "%"+separseparatedStr+"%")
+		}
 	}
 	return resQuery, placeholderCount, selectArgs
 }
