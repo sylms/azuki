@@ -1,17 +1,5 @@
 # azuki
-[sylms/daifuku](https://github.com/sylms/daifuku) 向けの HTTP API サーバー
 
-```
-export SYLMS_POSTGRES_DB=sylms
-export SYLMS_POSTGRES_USER=sylms
-export SYLMS_POSTGRES_PASSWORD=sylms
-export SYLMS_POSTGRES_HOST=127.0.0.1
-export SYLMS_POSTGRES_PORT=5432
-export SYLMS_PORT=8080
+これは、[sylms Explorer](https://github.com/sylms/azuki/wiki/sylms_explorer) のバックエンドとなるアプリケーションです。
 
-make build
-```
-
-```
-docker-compsoe -f docker-compose.azuki.yml up -d
-```
+詳細は [Wiki](https://github.com/sylms/azuki/wiki) にまとまっています。
