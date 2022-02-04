@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  # 初回のみ実行
+  # 科目情報を更新する仕組みは整っていない
+  csv2sql:
+    image: ghcr.io/sylms/csv2sql:latest
+    volumes:
+      - "./kdb.csv:/app/csv/kdb.csv:ro"
+    environment:
+      SYLMS_POSTGRES_DB: ${POSTGRES_DB:-sylms}
+      SYLMS_POSTGRES_USER: ${POSTGRES_USER:-sylms}
+      SYLMS_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sylms}
+      SYLMS_POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      SYLMS_POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      SYLMS_CSV_YEAR: ${YEAR:-2021}
+    entrypoint: dockerize --wait tcp://${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}
+    command: /app/csv2sql
+    depends_on:
+      - db
+
+  azuki:
+    image: ghcr.io/sylms/azuki:latest
+    # ports:
+    #   - 127.0.0.1:${PORT:-9090}:${PORT:-9090}
+    environment:
+      SYLMS_POSTGRES_DB: ${POSTGRES_DB:-sylms}
+      SYLMS_POSTGRES_USER: ${POSTGRES_USER:-sylms}
+      SYLMS_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sylms}
+      SYLMS_POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      SYLMS_POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      SYLMS_PORT: ${PORT:-9090}
+    entrypoint: dockerize --wait tcp://${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}
+    command: /app/azuki
+    depends_on:
+      - db
+
+  db:
+    image: postgres:12.7-alpine
+    ports:
+      - 127.0.0.1:${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}
+    environment:
+      TZ: Asia/Tokyo
+      POSTGRES_DB: ${POSTGRES_DB:-sylms}
+      POSTGRES_USER: ${POSTGRES_USER:-sylms}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sylms}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data: null
