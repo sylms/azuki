@@ -21,10 +21,11 @@ const (
 	envSylmsPostgresHostKey     = "SYLMS_POSTGRES_HOST"
 	envSylmsPostgresPortKey     = "SYLMS_POSTGRES_PORT"
 	envSylmsPort                = "SYLMS_PORT"
+	envSecretKey                = "SECRET_KEY"
 )
 
 func main() {
-	envKeys := []string{envSylmsPostgresDBKey, envSylmsPostgresUserKey, envSylmsPostgresPasswordKey, envSylmsPostgresHostKey, envSylmsPostgresPortKey, envSylmsPort}
+	envKeys := []string{envSylmsPostgresDBKey, envSylmsPostgresUserKey, envSylmsPostgresPasswordKey, envSylmsPostgresHostKey, envSylmsPostgresPortKey, envSylmsPort, envSecretKey}
 	for _, key := range envKeys {
 		val, ok := os.LookupEnv(key)
 		if !ok || val == "" {
@@ -46,12 +47,13 @@ func main() {
 
 	persistence := persistence.NewCoursePersistence(db)
 	useCase := usecase.NewCourseUseCase(persistence)
-	handler := handler.NewCourseHandler(useCase)
+	handler := handler.NewCourseHandler(useCase, os.Getenv(envSecretKey))
 
 	r := mux.NewRouter()
 	r.HandleFunc("/course", handler.Search).Methods("POST")
 	r.HandleFunc("/facet", handler.Facet).Methods("POST")
 	r.HandleFunc("/csv", handler.Csv).Methods("POST")
+	r.HandleFunc("/update", handler.Update).Methods("POST")
 	c := cors.Default().Handler(r)
 	log.Printf("Listen Port: %s", portStr)
 	err = http.ListenAndServe(fmt.Sprintf(":%s", portStr), c)

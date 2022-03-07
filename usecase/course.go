@@ -5,6 +5,7 @@ import "github.com/sylms/azuki/domain"
 type CourseUseCase interface {
 	Search(domain.CourseQuery) ([]*domain.Course, error)
 	Facet(domain.CourseQuery) ([]*domain.Facet, error)
+	Update(domain.UpdateJSON) error
 }
 
 type courseUseCase struct {
@@ -31,4 +32,12 @@ func (uc *courseUseCase) Facet(query domain.CourseQuery) ([]*domain.Facet, error
 		return nil, err
 	}
 	return facets, nil
+}
+
+func (uc *courseUseCase) Update(query domain.UpdateJSON) error {
+	err := uc.repo.Update(query)
+	if err != nil {
+		return err
+	}
+	return nil
 }
