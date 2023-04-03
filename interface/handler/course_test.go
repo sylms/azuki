@@ -120,7 +120,7 @@ func Test_courseHandler_Search(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodPost, "/courses", bytes.NewBufferString(tt.reqBody))
+			req, err := http.NewRequest(http.MethodPost, "/course", bytes.NewBufferString(tt.reqBody))
 			if err != nil {
 				t.Fatal(err)
 			}
