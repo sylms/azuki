@@ -86,6 +86,36 @@ func Test_courseHandler_Search(t *testing.T) {
 			wantResStatusCode: http.StatusOK,
 			wantResBody:       `[{"id":18010,"course_number":"GA10101","course_name":"情報社会と法制度","instructional_type":1,"credits":"2.0","standard_registration_year":["2"],"term":[4,5],"period":["月5","月6"],"classroom":"","instructor":["髙良 幸哉"],"course_overview":"情報化社会における法制度や情報モラル向上に必要な基礎知識を習得することを目指すため、現行の我が国の法制度の基礎を学び、ネットワーク社会における法整備の現状について講義する。","remarks":"オンライン(オンデマンド型)","credited_auditors":0,"application_conditions":"正規生に対しても受講制限をしているため","alt_course_name":"Information Society Law","course_code":"GA10101","course_code_name":"情報社会と法制度","csv_updated_at":"0001-01-01T00:00:00Z","year":2021,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z"}]`,
 		},
+		{
+			name: "検索条件に該当する科目が存在しないときに空配列を表す JSON 文字列を返す",
+			fakeSearch: fakeSearch{
+				Search: func(cq domain.CourseQuery) ([]*domain.Course, error) {
+					courses := []*domain.Course{}
+					return courses, nil
+				},
+			},
+			reqContentTypeHeader: "application/json",
+			reqBody: `{
+		    "course_number": "GA10101",
+		    "course_name": "情報社会と法制度",
+		    "instructional_type": -1,
+		    "credits": "",
+		    "standard_registration_year": -1,
+		    "term": "",
+		    "period": "",
+		    "classroom": "",
+		    "instructor": "",
+		    "course_overview": "",
+		    "remarks": "",
+		    "course_name_filter_type": "and",
+		    "course_overview_filter_type": "and",
+		    "filter_type": "and",
+		    "limit": 20,
+		    "offset": 0
+		}`,
+			wantResStatusCode: http.StatusOK,
+			wantResBody:       `[]`,
+		},
 	}
 
 	for _, tt := range tests {
