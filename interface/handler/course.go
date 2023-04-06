@@ -109,7 +109,7 @@ func (h *courseHandler) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var coursesJson []CourseJSON
+	coursesJson := []CourseJSON{}
 	for _, course := range courses {
 		courseJson := CourseJSON(*course)
 		coursesJson = append(coursesJson, courseJson)
